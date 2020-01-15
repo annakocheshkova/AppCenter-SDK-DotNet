@@ -239,28 +239,32 @@ Task("NugetPackVSTS").Does(()=>
 
 // Fills sdk, android and ios versions in the build config file with the relevant ones.
 // sdkVersion must be provided as a parameter.
-Task("FillVersions").Does((string sdkVersion) => 
+Task("FillVersions").Does(() => 
 {
     Information($"Filling build config with new versions...");
-    Information($"Verifying if {sdkVersion} is a valid semver version...");
-    ParseSemVer(sdkVersion);
+    var sdkVersion = Argument<string>("sdkVersion", "");
+    if (sdkVersion.Length > 0) 
+    {
+        Information($"Verifying if {sdkVersion} is a valid semver version...");
+        ParseSemVer(sdkVersion);
+        ReplaceTextInFiles(VersionFilePath, VersionReader.SdkVersion, sdkVersion);
+    }
     string androidLatestVersion = GetLatestGitHubReleaseVersion(AndroidSdkRepoName);
     string appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
     Information($"Received latest android sdk release version {androidLatestVersion}. Verifying if it's a valid semver version...");
     ParseSemVer(androidLatestVersion);
     Information($"Received latest apple sdk release version {appleLatestVersion}. Verifying if it's a valid semver version...");
     ParseSemVer(appleLatestVersion);
-    bool versionsAreEqual = VersionReader.SdkVersion.Equals(sdkVersion) && VersionReader.IosVersion.Equals(appleLatestVersion) && VersionReader.AndroidVersion.Equals(androidLatestVersion);
+    bool versionsAreEqual = VersionReader.IosVersion.Equals(appleLatestVersion) && VersionReader.AndroidVersion.Equals(androidLatestVersion);
     if (versionsAreEqual) 
     {
         Information($"Nothing to replace. Exiting...");
         return;
     }
-    Information($"Replacing build config versions: sdkVersion is {VersionReader.SdkVersion}; androidVersion is {VersionReader.AndroidVersion} and iosVersion is {VersionReader.IosVersion}.");
-    ReplaceTextInFiles(VersionFilePath, VersionReader.SdkVersion, sdkVersion);
+    Information($"Replacing build config versions: androidVersion is {VersionReader.AndroidVersion} and iosVersion is {VersionReader.IosVersion}.");
     ReplaceTextInFiles(VersionFilePath, VersionReader.AndroidVersion, androidLatestVersion);
     ReplaceTextInFiles(VersionFilePath, VersionReader.IosVersion, appleLatestVersion);
-    Information($"Successfully replaced sdk version with {sdkVersion}, iosVersion with {appleLatestVersion} and androidVersion with {androidLatestVersion} in ac-build-config.xml.");
+    Information($"Successfully replaced iosVersion with {appleLatestVersion} and androidVersion with {androidLatestVersion} in ac-build-config.xml.");
 }).OnError(HandleError);
 
 // Gets the latest repository release version. 
