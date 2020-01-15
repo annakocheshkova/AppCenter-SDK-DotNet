@@ -194,12 +194,12 @@ Task("UpdateToLatestVersions").Does(() =>
     Information($"Successfully replaced iosVersion with {appleLatestVersion} and androidVersion with {androidLatestVersion} in ac-build-config.xml.");
 }).OnError(HandleError);
 
-Task("BumpMinorVersion").Does(() => 
+Task("IncreasePatchVersion").Does(() => 
 {
     var sdkVersion = ParseSemVer(VersionReader.SdkVersion);
-    var minorVersion = sdkVersion.Minor;
-    minorVersion++;
-    sdkVersion = sdkVersion.Change(sdkVersion.Major, minorVersion, sdkVersion.Patch);
+    var patchVersion = sdkVersion.Patch;
+    patchVersion++;
+    sdkVersion = sdkVersion.Change(sdkVersion.Major, sdkVersion.Minor, patchVersion);
     Information($"Bumping {VersionReader.SdkVersion} sdk version to {sdkVersion.ToString()}...");
     UpdateConfigFileSdkVersion(sdkVersion.ToString());
     Information($"Successfully wrote the changes to ac-build-config.xml.");
