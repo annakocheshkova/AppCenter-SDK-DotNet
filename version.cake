@@ -4,6 +4,8 @@
 #addin nuget:?package=Cake.FileHelpers&version=3.0.0
 #addin nuget:?package=Cake.Git&version=0.18.0
 #addin nuget:?package=Cake.Incubator&version=2.0.2
+#addin nuget:?package=Cake.SemVer&version=2.0.0
+#addin nuget:?package=semver&version=2.0.4
 #load "scripts/utility.cake"
 #load "scripts/configuration/config-parser.cake"
 
@@ -12,6 +14,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
+
+var AndroidSdkRepoName = "microsoft/appCenter-sdk-android";
+var AppleSdkRepoName = "microsoft/appCenter-sdk-apple";
 
 // Task TARGET for build
 var TARGET = Argument("target", Argument("t", ""));
@@ -158,6 +163,36 @@ Task("StartNewVersion").Does(()=>
     var newBundleShortVersionString = "<key>CFBundleShortVersionString</key>\n\t<string>" + newVersion + "</string>";
     ReplaceRegexInFilesWithExclusion("**/Info.plist", bundleShortVersionPattern, newBundleShortVersionString, "/bin/", "/obj/", "Demo");
 });
+
+// Fills sdk, android and ios versions in the build config file with the relevant ones.
+// sdkVersion must be provided as a parameter.
+Task("FillVersions").Does(() => 
+{
+    Information($"Filling build config with new versions...");
+    var sdkVersion = Argument<string>("sdkVersion", "");
+    if (sdkVersion.Length > 0) 
+    {
+        Information($"Verifying if {sdkVersion} is a valid semver version...");
+        ParseSemVer(sdkVersion);
+        UpdateConfigFileSdkVersion(sdkVersion);
+    }
+    string androidLatestVersion = GetLatestGitHubReleaseVersion(AndroidSdkRepoName);
+    string appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
+    Information($"Received latest android sdk release version {androidLatestVersion}. Verifying if it's a valid semver version...");
+    ParseSemVer(androidLatestVersion);
+    Information($"Received latest apple sdk release version {appleLatestVersion}. Verifying if it's a valid semver version...");
+    ParseSemVer(appleLatestVersion);
+    bool versionsAreEqual = VersionReader.IosVersion.Equals(appleLatestVersion) && VersionReader.AndroidVersion.Equals(androidLatestVersion);
+    if (versionsAreEqual) 
+    {
+        Information($"Nothing to replace. Exiting...");
+        return;
+    }
+    Information($"Replacing build config versions: androidVersion is {VersionReader.AndroidVersion} and iosVersion is {VersionReader.IosVersion}.");
+    ReplaceTextInFiles(ConfigFile.Path, VersionReader.AndroidVersion, androidLatestVersion);
+    ReplaceTextInFiles(ConfigFile.Path, VersionReader.IosVersion, appleLatestVersion);
+    Information($"Successfully replaced iosVersion with {appleLatestVersion} and androidVersion with {androidLatestVersion} in ac-build-config.xml.");
+}).OnError(HandleError);
 
 void IncrementRevisionNumber(bool useHash)
 {
