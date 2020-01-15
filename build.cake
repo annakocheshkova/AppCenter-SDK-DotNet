@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 #tool nuget:?package=XamarinComponent
+#addin nuget:?package=Cake.SemVer&version=2.0.0
+#addin nuget:?package=semver&version=2.0.4
 #addin nuget:?package=Cake.FileHelpers&version=3.0.0
 #addin nuget:?package=Cake.Git&version=0.18.0
 #addin nuget:?package=Cake.Incubator&version=2.0.2
@@ -18,6 +20,9 @@ using System.Collections.Generic;
 var DownloadedAssembliesFolder = Statics.TemporaryPrefix + "DownloadedAssemblies";
 var MacAssembliesZip = Statics.TemporaryPrefix + "MacAssemblies.zip";
 var WindowsAssembliesZip = Statics.TemporaryPrefix + "WindowsAssemblies.zip";
+var AndroidSdkRepoName = "microsoft/appCenter-sdk-android";
+var AppleSdkRepoName = "microsoft/appCenter-sdk-apple";
+var VersionFilePath = "scripts/configuration/ac-build-config.xml";
 
 // Contains all assembly paths and how to use them
 PlatformPaths AssemblyPlatformPaths;
@@ -231,6 +236,52 @@ Task("NugetPackVSTS").Does(()=>
         });
     }
 }).OnError(HandleError);
+
+// Fills sdk, android and ios versions in the build config file with the relevant ones.
+// sdkVersion must be provided as a parameter.
+Task("FillVersions").Does((string sdkVersion) => 
+{
+    Information($"Filling build config with new versions...");
+    Information($"Verifying if {sdkVersion} is a valid semver version...");
+    ParseSemVer(sdkVersion);
+    string androidLatestVersion = GetLatestGitHubReleaseVersion(AndroidSdkRepoName);
+    string appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
+    Information($"Received latest android sdk release version {androidLatestVersion}. Verifying if it's a valid semver version...");
+    ParseSemVer(androidLatestVersion);
+    Information($"Received latest apple sdk release version {appleLatestVersion}. Verifying if it's a valid semver version...");
+    ParseSemVer(appleLatestVersion);
+    bool versionsAreEqual = VersionReader.SdkVersion.Equals(sdkVersion) && VersionReader.IosVersion.Equals(appleLatestVersion) && VersionReader.AndroidVersion.Equals(androidLatestVersion);
+    if (versionsAreEqual) 
+    {
+        Information($"Nothing to replace. Exiting...");
+        return;
+    }
+    Information($"Replacing build config versions: sdkVersion is {VersionReader.SdkVersion}; androidVersion is {VersionReader.AndroidVersion} and iosVersion is {VersionReader.IosVersion}.");
+    ReplaceTextInFiles(VersionFilePath, VersionReader.SdkVersion, sdkVersion);
+    ReplaceTextInFiles(VersionFilePath, VersionReader.AndroidVersion, androidLatestVersion);
+    ReplaceTextInFiles(VersionFilePath, VersionReader.IosVersion, appleLatestVersion);
+    Information($"Successfully replaced sdk version with {sdkVersion}, iosVersion with {appleLatestVersion} and androidVersion with {androidLatestVersion} in ac-build-config.xml.");
+}).OnError(HandleError);
+
+// Gets the latest repository release version. 
+// repoName is a repository name, including owner: <owner>/<name>.
+string GetLatestGitHubReleaseVersion(string repoName) 
+{
+    HttpWebRequest request = CreateGitHubRequest($"repos/{repoName}/releases/latest");
+    JObject release = GetResponseJson(request);
+    return release["tag_name"].ToString();
+}
+
+// Creates a valid GitHub request and fills the headers needed to make a request to GH.
+// path is a part of the url without the base part, doesn't need to start with "/".
+HttpWebRequest CreateGitHubRequest(string path) 
+{
+    var url = $"https://api.github.com/{path}";
+    HttpWebRequest request = (HttpWebRequest)WebRequest.Create (url);
+    request.Accept = "application/vnd.github.v3+json";
+    request.UserAgent = "Microsoft";
+    return request;
+}
 
 // In VSTS, the assembly path environment variable names should be in the format
 // "{uppercase group id}_ASSEMBLY_PATH_NUSPEC"

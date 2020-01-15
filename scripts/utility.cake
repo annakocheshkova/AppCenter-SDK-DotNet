@@ -2,8 +2,10 @@
 // Licensed under the MIT License.
 
 // This file contains various utilities that are used or can be used by multiple cake scripts.
-
 // Static variables defined outside of a class can cause issues.
+
+using Newtonsoft.Json.Linq;
+
 public class Statics
 {
     // Cake context.
@@ -76,3 +78,12 @@ Task("clean")
     CleanDirectories("./**/bin");
     CleanDirectories("./**/obj");
 });
+
+JObject GetResponseJson(HttpWebRequest request)
+{
+    using (var response = request.GetResponse())
+    using (var reader = new StreamReader(response.GetResponseStream()))
+    {
+        return JObject.Parse(reader.ReadToEnd());
+    }
+}
