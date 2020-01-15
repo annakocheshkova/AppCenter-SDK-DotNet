@@ -194,6 +194,17 @@ Task("UpdateToLatestVersions").Does(() =>
     Information($"Successfully replaced iosVersion with {appleLatestVersion} and androidVersion with {androidLatestVersion} in ac-build-config.xml.");
 }).OnError(HandleError);
 
+Task("BumpMinorVersion").Does(() => 
+{
+    var sdkVersion = ParseSemVer(VersionReader.SdkVersion);
+    var minorVersion = sdkVersion.Minor;
+    minorVersion++;
+    sdkVersion = sdkVersion.Change(sdkVersion.Major, minorVersion, sdkVersion.Patch);
+    Information($"Bumping {VersionReader.SdkVersion} sdk version to {sdkVersion.ToString()}...");
+    UpdateConfigFileSdkVersion(sdkVersion.ToString());
+    Information($"Successfully wrote the changes to ac-build-config.xml.");
+}).OnError(HandleError);
+
 void IncrementRevisionNumber(bool useHash)
 {
     // Get base version of .NET standard core
