@@ -166,7 +166,7 @@ Task("StartNewVersion").Does(()=>
 
 // Fills sdk, android and ios versions in the build config file with the relevant ones.
 // sdkVersion must be provided as a parameter.
-Task("FillVersions").Does(() => 
+Task("UpdateToLatestVersions").Does(() => 
 {
     Information($"Filling build config with new versions...");
     var sdkVersion = Argument<string>("sdkVersion", "");
@@ -176,13 +176,13 @@ Task("FillVersions").Does(() =>
         ParseSemVer(sdkVersion);
         UpdateConfigFileSdkVersion(sdkVersion);
     }
-    string androidLatestVersion = GetLatestGitHubReleaseVersion(AndroidSdkRepoName);
-    string appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
+    var androidLatestVersion = GetLatestGitHubReleaseVersion(AndroidSdkRepoName);
+    var appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
     Information($"Received latest android sdk release version {androidLatestVersion}. Verifying if it's a valid semver version...");
     ParseSemVer(androidLatestVersion);
     Information($"Received latest apple sdk release version {appleLatestVersion}. Verifying if it's a valid semver version...");
     ParseSemVer(appleLatestVersion);
-    bool versionsAreEqual = VersionReader.IosVersion.Equals(appleLatestVersion) && VersionReader.AndroidVersion.Equals(androidLatestVersion);
+    var versionsAreEqual = VersionReader.IosVersion.Equals(appleLatestVersion) && VersionReader.AndroidVersion.Equals(androidLatestVersion);
     if (versionsAreEqual) 
     {
         Information($"Nothing to replace. Exiting...");

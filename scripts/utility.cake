@@ -92,8 +92,8 @@ JObject GetResponseJson(HttpWebRequest request)
 // repoName is a repository name, including owner: <owner>/<name>.
 string GetLatestGitHubReleaseVersion(string repoName) 
 {
-    HttpWebRequest request = CreateGitHubRequest($"repos/{repoName}/releases/latest");
-    JObject release = GetResponseJson(request);
+    var request = CreateGitHubRequest($"repos/{repoName}/releases/latest");
+    var release = GetResponseJson(request);
     return release["tag_name"].ToString();
 }
 
@@ -102,7 +102,7 @@ string GetLatestGitHubReleaseVersion(string repoName)
 HttpWebRequest CreateGitHubRequest(string path) 
 {
     var url = $"https://api.github.com/{path}";
-    HttpWebRequest request = (HttpWebRequest)WebRequest.Create (url);
+    var request = (HttpWebRequest)WebRequest.Create (url);
     request.Accept = "application/vnd.github.v3+json";
     request.UserAgent = "Microsoft";
     return request;
