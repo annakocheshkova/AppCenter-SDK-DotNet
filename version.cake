@@ -164,13 +164,12 @@ Task("StartNewVersion").Does(()=>
     ReplaceRegexInFilesWithExclusion("**/Info.plist", bundleShortVersionPattern, newBundleShortVersionString, "/bin/", "/obj/", "Demo");
 });
 
-// Fills sdk, android and ios versions in the build config file with the relevant ones.
-// sdkVersion must be provided as a parameter.
-Task("UpdateToLatestVersions")
-.IsDependentOn("UpdateAndroidToLatestVersion")
-.IsDependentOn("UpdateIosToLatestVersion");
+// Fills android and ios versions in the build config file with the relevant ones.
+Task("UpdateNativeVersionsToLatest")
+.IsDependentOn("UpdateAndroidVersionToLatest")
+.IsDependentOn("UpdateIosVersionToLatest");
 
-Task("UpdateAndroidToLatestVersion")
+Task("UpdateAndroidVersionToLatest")
 .Does(() => 
 {
     var androidLatestVersion = GetLatestGitHubReleaseVersion(AndroidSdkRepoName);
@@ -184,10 +183,10 @@ Task("UpdateAndroidToLatestVersion")
     }
     Information($"Replacing build config version: androidVersion is {VersionReader.AndroidVersion}.");
     ReplaceTextInFiles(ConfigFile.Path, VersionReader.AndroidVersion, androidLatestVersion);
-    Information($"Successfully replaced androidVersion with {androidLatestVersion} in ac-build-config.xml.");
+    Information($"Successfully replaced androidVersion with {androidLatestVersion} in {ConfigFile.Name}.");
 }).OnError(HandleError);
 
-Task("UpdateIosToLatestVersion")
+Task("UpdateIosVersionToLatest")
 .Does(() => 
 {
     var appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
