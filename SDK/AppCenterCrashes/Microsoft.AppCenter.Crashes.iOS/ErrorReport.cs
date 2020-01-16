@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using Foundation;
 using Microsoft.AppCenter.Crashes.iOS.Bindings;
 
@@ -30,7 +33,7 @@ namespace Microsoft.AppCenter.Crashes
             MSWrapperException wrapperException = MSWrapperExceptionManager.LoadWrapperExceptionWithUUID(msReport.IncidentIdentifier);
             if (wrapperException != null && wrapperException.ExceptionData != null && wrapperException.ExceptionData.Length > 0)
             {
-                Exception = CrashesUtils.DeserializeException(wrapperException.ExceptionData.ToArray());
+                StackTrace = CrashesUtils.DeserializeException(wrapperException.ExceptionData.ToArray());
             }
         }
 

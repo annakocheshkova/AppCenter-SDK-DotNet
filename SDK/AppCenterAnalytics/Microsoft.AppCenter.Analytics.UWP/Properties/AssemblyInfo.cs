@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,10 +17,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
-#if REFERENCE
-[assembly: ReferenceAssembly]
-#endif
-
 // Version information for an assembly consists of the following four values:
 //
 //      Major Version
@@ -29,6 +28,6 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("0.0.0.0")]
-[assembly: AssemblyInformationalVersion("1.13.0-SNAPSHOT")]
-[assembly: AssemblyFileVersion("1.13.0.0")]
+[assembly: AssemblyInformationalVersion("2.6.5-SNAPSHOT")]
+[assembly: AssemblyFileVersion("2.6.5.0")]
 [assembly: ComVisible(false)]

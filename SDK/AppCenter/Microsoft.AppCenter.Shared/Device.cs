@@ -1,4 +1,7 @@
-﻿namespace Microsoft.AppCenter
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+namespace Microsoft.AppCenter
 {
     /// <summary>
     /// Device class to help retrieve device information.
@@ -51,7 +54,7 @@
         /// Gets the OS API level.
         /// </summary>
         /// <value>API level when applicable like in Android (example: 15).</value>
-        public int OsApiLevel { get; }
+        public int? OsApiLevel { get; }
 
         /// <summary>
         /// Gets the locale.

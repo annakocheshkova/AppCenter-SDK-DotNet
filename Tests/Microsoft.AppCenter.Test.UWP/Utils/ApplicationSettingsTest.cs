@@ -1,4 +1,7 @@
-﻿using Microsoft.AppCenter.Utils;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using Microsoft.AppCenter.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Windows.Storage;
 
@@ -38,9 +41,8 @@ namespace Microsoft.AppCenter.Test.UWP.Utils
             const string key = "test";
             Assert.IsFalse(settings.ContainsKey(key));
             Assert.AreEqual(42, settings.GetValue(key, 42));
-            Assert.IsTrue(settings.ContainsKey(key));
-            Assert.AreEqual(42, settings.GetValue<int>(key));
-            Assert.AreEqual(42, settings.GetValue(key, 0));
+            Assert.AreEqual(0, settings.GetValue<int>(key));
+            Assert.AreEqual(0, settings.GetValue(key, 0));
         }
 
         /// <summary>

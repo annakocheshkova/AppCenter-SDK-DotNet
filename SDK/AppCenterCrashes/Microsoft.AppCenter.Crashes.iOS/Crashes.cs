@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -45,6 +48,11 @@ namespace Microsoft.AppCenter.Crashes
             });
         }
 
+        static Task<bool> PlatformHasReceivedMemoryWarningInLastSessionAsync()
+        {
+            return Task.FromResult(MSCrashes.HasReceivedMemoryWarningInLastSession);
+        }
+
         static void PlatformNotifyUserConfirmation(UserConfirmation confirmation)
         {
             MSUserConfirmation iosUserConfirmation;
@@ -65,15 +73,28 @@ namespace Microsoft.AppCenter.Crashes
             MSCrashes.NotifyWithUserConfirmation(iosUserConfirmation);
         }
 
-        static void PlatformTrackError(Exception exception, IDictionary<string, string> properties)
+        static void PlatformTrackError(Exception exception, IDictionary<string, string> properties, ErrorAttachmentLog[] attachments)
         {
-            if (properties != null)
+            NSDictionary propertyDictionary = properties != null ? StringDictToNSDict(properties) : new NSDictionary();
+            NSMutableArray attachmentArray = new NSMutableArray();
+            foreach (var attachment in attachments)
             {
-                MSCrashes.TrackModelException(GenerateiOSException(exception, false), StringDictToNSDict(properties));
-                return;
+                if (attachment?.internalAttachment != null)
+                {
+                    attachmentArray.Add(attachment.internalAttachment);
+                }
+                else
+                {
+                    AppCenterLog.Warn(LogTag, "Skipping null ErrorAttachmentLog in Crashes.TrackError.");
+                }
             }
-            MSCrashes.TrackModelException(GenerateiOSException(exception, false));
+            MSWrapperCrashesHelper.TrackModelException(GenerateiOSException(exception, false), propertyDictionary, attachmentArray);
         }
+
+        /// <summary>
+        /// We keep the reference to avoid it being freed, inlining this object will cause listeners not to be called.
+        /// </summary>
+        static readonly CrashesInitializationDelegate _crashesInitializationDelegate = new CrashesInitializationDelegate();
 
         /// <summary>
         /// We keep the reference to avoid it being freed, inlining this object will cause listeners not to be called.
@@ -84,7 +105,7 @@ namespace Microsoft.AppCenter.Crashes
         {
             /* Perform custom setup around the native SDK's for setting signal handlers */
             MSCrashes.DisableMachExceptionHandler();
-            MSWrapperCrashesHelper.SetCrashHandlerSetupDelegate(new CrashesInitializationDelegate());
+            MSWrapperCrashesHelper.SetCrashHandlerSetupDelegate(_crashesInitializationDelegate);
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             MSCrashes.SetUserConfirmationHandler((reports) =>
                     {
@@ -119,7 +140,7 @@ namespace Microsoft.AppCenter.Crashes
         {
             var msException = new MSException();
             msException.Type = exception.GetType().FullName;
-            msException.Message = exception.Message;
+            msException.Message = exception.Message ?? "";
             msException.StackTrace = exception.StackTrace;
             msException.Frames = structuredFrames ? GenerateStackFrames(exception) : null;
             msException.WrapperSdkName = WrapperSdk.Name;

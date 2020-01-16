@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 
 namespace Contoso.Forms.Demo
 {
@@ -14,8 +17,8 @@ namespace Contoso.Forms.Demo
 
         async void AddProperty(object sender, EventArgs e)
         {
-            Property addedProperty = new Property(NameEntry.Text, ValueEntry.Text);
-            PropertyAdded.Invoke(addedProperty);
+            Property addedProperty = new Property(NameEntry?.Text, ValueEntry?.Text);
+            PropertyAdded?.Invoke(addedProperty);
             await Navigation.PopModalAsync();
         }
 

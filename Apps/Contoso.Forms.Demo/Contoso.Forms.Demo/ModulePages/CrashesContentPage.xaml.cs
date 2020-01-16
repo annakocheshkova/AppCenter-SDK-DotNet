@@ -1,4 +1,5 @@
-﻿#define DEBUG
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -8,10 +9,17 @@ using Contoso.Forms.Demo.Views;
 using Microsoft.AppCenter;
 using Microsoft.AppCenter.Crashes;
 using Xamarin.Forms;
+using System.Linq;
+using System.Threading.Tasks;
+using Contoso.UtilClassLibrary;
 
 namespace Contoso.Forms.Demo
 {
     using XamarinDevice = Xamarin.Forms.Device;
+
+    public class NonSerializableException : Exception
+    {
+    }
 
     [Android.Runtime.Preserve(AllMembers = true)]
     public partial class CrashesContentPage
@@ -36,22 +44,22 @@ namespace Contoso.Forms.Demo
         protected override async void OnAppearing()
         {
             base.OnAppearing();
-            CrashesEnabledSwitchCell.On = await Crashes.IsEnabledAsync();
-            CrashesEnabledSwitchCell.IsEnabled = await AppCenter.IsEnabledAsync();
+            RefreshEnabled();
+            var hasLowMemoryWarning = await Crashes.HasReceivedMemoryWarningInLastSessionAsync();
+            MemoryWarningLabel.Text = hasLowMemoryWarning ? "Yes" : "No";
 
             // Attachments
             if (Application.Current.Properties.TryGetValue(TextAttachmentKey, out var textAttachment) &&
                 textAttachment is string text)
             {
-                TextAttachmentCell.Detail = text;
+                TextAttachmentContent.Text = text;
             }
             if (Application.Current.Properties.TryGetValue(FileAttachmentKey, out var fileAttachment) &&
                 fileAttachment is string file)
             {
-                var filePicker = DependencyService.Get<IFilePicker>();
                 try
                 {
-                    FileAttachmentCell.Detail = filePicker?.GetFileDescription(file);
+                    BinaryAttachmentFilePathLabel.Text = file;
                 }
                 catch (Exception e)
                 {
@@ -59,22 +67,18 @@ namespace Contoso.Forms.Demo
                     Application.Current.Properties.Remove(FileAttachmentKey);
                 }
             }
-            if (XamarinDevice.RuntimePlatform == XamarinDevice.UWP)
-            {
-                TextAttachmentCell.IsEnabled = false;
-                FileAttachmentCell.IsEnabled = false;
-            }
         }
 
         async void UpdateEnabled(object sender, ToggledEventArgs e)
         {
             await Crashes.SetEnabledAsync(e.Value);
+            RefreshEnabled();
         }
 
         async void TextAttachment(object sender, EventArgs e)
         {
             var text = await TextAttachmentView.Show(Navigation);
-            ((TextCell)sender).Detail = text;
+            TextAttachmentContent.Text = text;
             Application.Current.Properties[TextAttachmentKey] = text;
             await Application.Current.SavePropertiesAsync();
         }
@@ -87,9 +91,9 @@ namespace Contoso.Forms.Demo
                 Debug.WriteLine("File attachment isn't implemented");
                 return;
             }
-            var file = await filePicker.PickFile();
-            ((TextCell)sender).Detail = filePicker.GetFileDescription(file);
-            Application.Current.Properties[FileAttachmentKey] = file;
+            var filePath = await filePicker.PickFile();
+            BinaryAttachmentFilePathLabel.Text = filePath;
+            Application.Current.Properties[FileAttachmentKey] = filePath;
             await Application.Current.SavePropertiesAsync();
         }
 
@@ -98,6 +102,10 @@ namespace Contoso.Forms.Demo
             var addPage = new AddPropertyContentPage();
             addPage.PropertyAdded += (Property property) =>
             {
+                if (property.Name == null || Properties.Any(i => i.Name == property.Name))
+                {
+                    return;
+                }
                 Properties.Add(property);
                 RefreshPropCount();
             };
@@ -107,6 +115,12 @@ namespace Contoso.Forms.Demo
         async void PropertiesCellTapped(object sender, EventArgs e)
         {
             await Navigation.PushAsync(new PropertiesContentPage(Properties));
+        }
+
+        async void RefreshEnabled()
+        {
+            CrashesEnabledSwitchCell.On = await Crashes.IsEnabledAsync();
+            CrashesEnabledSwitchCell.IsEnabled = await AppCenter.IsEnabledAsync();
         }
 
         void RefreshPropCount()
@@ -137,6 +151,18 @@ namespace Contoso.Forms.Demo
 #pragma warning disable CS0219
             HandleOrThrow(() => (42 / int.Parse("0")).ToString());
 #pragma warning restore CS0219
+        }
+
+        void CatchNullReferenceException(object sender, EventArgs e)
+        {
+            try
+            {
+                TriggerNullReferenceException();
+            }
+            catch (NullReferenceException)
+            {
+                Debug.WriteLine("null reference exception");
+            }
         }
 
         void NullReferenceException(object sender, EventArgs e)
@@ -209,6 +235,18 @@ namespace Contoso.Forms.Demo
             }
         }
 
+        public void ClassLibException(object sender, EventArgs e)
+        {
+            try
+            {
+                CrashUtils.BackgroundExceptionTask().RunSynchronously();
+            }
+            catch (Exception ex) when (HandleExceptionsSwitchCell.On)
+            {
+                TrackException(ex);
+            }
+        }
+
         private void TrackException(Exception e)
         {
             var properties = new Dictionary<string, string>();
@@ -222,7 +260,25 @@ namespace Contoso.Forms.Demo
             }
             Properties.Clear();
             RefreshPropCount();
-            Crashes.TrackError(e, properties);
+            Crashes.TrackError(e, properties, App.GetErrorAttachments().ToArray());
+        }
+
+        void ClearCrashUserConfirmation(object sender, EventArgs e)
+        {
+            DependencyService.Get<IClearCrashClick>().ClearCrashButton();
+        }
+
+        void MemoryWarningTrigger(object sender, EventArgs e)
+        {
+            Task.Run(() =>
+            {
+                var blockSize = 128 * 1024 * 1024;
+                var byteArrays = new List<IEnumerable<byte>>();
+                while (true)
+                {
+                    byteArrays.Add(Enumerable.Repeat((byte)blockSize, 10000000));
+                }
+            });
         }
     }
 }

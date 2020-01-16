@@ -1,7 +1,13 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #addin nuget:?package=Cake.FileHelpers&version=3.0.0
 #addin nuget:?package=Cake.Git&version=0.18.0
 #addin nuget:?package=Cake.Incubator&version=2.0.2
+#addin nuget:?package=Cake.SemVer&version=2.0.0
+#addin nuget:?package=semver&version=2.0.4
 #load "scripts/utility.cake"
+#load "scripts/test-tools.cake"
 #load "scripts/configuration/config-parser.cake"
 
 using System.Net;
@@ -9,6 +15,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
+
+var AndroidSdkRepoName = "microsoft/appCenter-sdk-android";
+var AppleSdkRepoName = "microsoft/appCenter-sdk-apple";
 
 // Task TARGET for build
 var TARGET = Argument("target", Argument("t", ""));
@@ -28,15 +37,22 @@ Task("IncrementRevisionNumber").Does(()=>
 
 Task("SetReleaseVersion").Does(()=>
 {
-    // Get base version of PCL core
-    var baseSemanticVersion = GetPCLBaseSemanticVersion();
+    var prereleaseSuffix = Argument<string>("PrereleaseSuffix", null);
+
+    // Get base version of .NET standard core
+    var releaseVersion = GetBaseSemanticVersion();
+
+    // Append suffix if any is provided for this release
+    if (prereleaseSuffix != null) {
+        releaseVersion = $"{releaseVersion}-{prereleaseSuffix}";
+    }
 
     // Replace versions in all non-demo app files
     var informationalVersionPattern = @"AssemblyInformationalVersion\(" + "\".*\"" + @"\)";
-    ReplaceRegexInFilesWithExclusion("**/AssemblyInfo.cs", informationalVersionPattern, "AssemblyInformationalVersion(\"" + baseSemanticVersion + "\")", "Demo");
-    UpdateNewProjSdkVersion(baseSemanticVersion, baseSemanticVersion);
-    UpdateWrapperSdkVersion(baseSemanticVersion);
-    UpdateConfigFileSdkVersion(baseSemanticVersion);
+    ReplaceRegexInFilesWithExclusion("**/AssemblyInfo.cs", informationalVersionPattern, "AssemblyInformationalVersion(\"" + releaseVersion + "\")", "Demo");
+    UpdateNewProjSdkVersion(releaseVersion, releaseVersion);
+    UpdateWrapperSdkVersion(releaseVersion);
+    UpdateConfigFileSdkVersion(releaseVersion);
 });
 
 Task("UpdateDemoVersion").Does(()=>
@@ -149,10 +165,60 @@ Task("StartNewVersion").Does(()=>
     ReplaceRegexInFilesWithExclusion("**/Info.plist", bundleShortVersionPattern, newBundleShortVersionString, "/bin/", "/obj/", "Demo");
 });
 
+// Fills android and ios versions in the build config file with the relevant ones.
+Task("UpdateNativeVersionsToLatest")
+.IsDependentOn("UpdateAndroidVersionToLatest")
+.IsDependentOn("UpdateIosVersionToLatest");
+
+Task("UpdateAndroidVersionToLatest")
+.Does(() => 
+{
+    var androidLatestVersion = GetLatestGitHubReleaseVersion(AndroidSdkRepoName);
+    Information($"Received latest android sdk release version {androidLatestVersion}. Verifying if it's a valid semver version...");
+    ParseSemVer(androidLatestVersion);
+    var versionsAreEqual = VersionReader.AndroidVersion.Equals(androidLatestVersion);
+    if (versionsAreEqual) 
+    {
+        Information($"Nothing to replace. Exiting...");
+        return;
+    }
+    Information($"Replacing build config version: androidVersion is {VersionReader.AndroidVersion}.");
+    ReplaceTextInFiles(ConfigFile.Path, VersionReader.AndroidVersion, androidLatestVersion);
+    Information($"Successfully replaced androidVersion with {androidLatestVersion} in {ConfigFile.Name}.");
+}).OnError(HandleError);
+
+Task("UpdateIosVersionToLatest")
+.Does(() => 
+{
+    var appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
+    Information($"Received latest apple sdk release version {appleLatestVersion}. Verifying if it's a valid semver version...");
+    ParseSemVer(appleLatestVersion);
+    var versionsAreEqual = VersionReader.IosVersion.Equals(appleLatestVersion);
+    if (versionsAreEqual) 
+    {
+        Information($"Nothing to replace. Exiting...");
+        return;
+    }
+    Information($"Replacing build config versions: iosVersion is {VersionReader.IosVersion}.");
+    ReplaceTextInFiles(ConfigFile.Path, VersionReader.IosVersion, appleLatestVersion);
+    Information($"Successfully replaced iosVersion with {appleLatestVersion} in ac-build-config.xml.");
+}).OnError(HandleError);
+
+Task("IncreasePatchVersion").Does(() => 
+{
+    var sdkVersion = ParseSemVer(VersionReader.SdkVersion);
+    var patchVersion = sdkVersion.Patch;
+    patchVersion++;
+    sdkVersion = sdkVersion.Change(sdkVersion.Major, sdkVersion.Minor, patchVersion);
+    Information($"Bumping {VersionReader.SdkVersion} sdk version to {sdkVersion.ToString()}...");
+    UpdateConfigFileSdkVersion(sdkVersion.ToString());
+    Information($"Successfully wrote the changes to ac-build-config.xml.");
+}).OnError(HandleError);
+
 void IncrementRevisionNumber(bool useHash)
 {
-    // Get base version of PCL core
-    var baseSemanticVersion = GetPCLBaseSemanticVersion();
+    // Get base version of .NET standard core
+    var baseSemanticVersion = GetBaseSemanticVersion();
     var nugetVer = GetLatestNuGetVersion();
     var baseVersion = GetBaseVersion(nugetVer);
     var newRevNum = baseSemanticVersion == baseVersion ? GetRevisionNumber(nugetVer) + 1 : 1;
@@ -185,7 +251,7 @@ void IncrementRevisionNumber(bool useHash)
     UpdateWrapperSdkVersion(newVersion);
 }
 
-string GetPCLBaseSemanticVersion()
+string GetBaseSemanticVersion()
 {
     return GetBaseVersion(VersionReader.SdkVersion);
 }
@@ -255,27 +321,27 @@ void UpdateWrapperSdkVersion(string newVersion)
 
 void UpdateNewProjSdkVersion(string newVersion, string newFileVersion)
 {
-    var csprojFiles = GetFiles("SDK/**/*.csproj");
+    var csprojFiles = GetFiles("**/*.csproj");
     foreach (var file in csprojFiles)
     {
-        UpdateNewProjVersion(file, newVersion, newFileVersion);
+        if (!file.FullPath.Contains("Demo"))
+        {
+            UpdateNewProjVersion(file, newVersion, newFileVersion);
+        }
     }
 }
 
 void UpdateNewProjVersion(FilePath file, string newVersion, string newFileVersion)
 {
     var csproj = XDocument.Load(file.FullPath);
-
-    // Check if csproj with new format
-    if (csproj.Root.Attribute("Sdk")?.Value != "Microsoft.NET.Sdk")
-    {
-        return;
-    }
     var version = csproj.XPathSelectElement("/Project/PropertyGroup/Version");
-    version.SetValue(newVersion);
+    version?.SetValue(newVersion);
     var fileVersion = csproj.XPathSelectElement("/Project/PropertyGroup/FileVersion");
-    fileVersion.SetValue(newFileVersion);
-    csproj.Save(file.FullPath);
+    fileVersion?.SetValue(newFileVersion);
+    if (version != null || fileVersion != null)
+    {
+        csproj.Save(file.FullPath);
+    }
 }
 
 // Gets the revision number from a version string containing revision -r****

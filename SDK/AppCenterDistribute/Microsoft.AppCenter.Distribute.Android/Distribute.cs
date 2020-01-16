@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Threading.Tasks;
 using Android.App;
 using Android.Runtime;
@@ -46,6 +49,15 @@ namespace Microsoft.AppCenter.Distribute
                     AndroidDistribute.NotifyUpdateAction(-2);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Set whether the distribute service can be used within a debuggable build.
+        /// </summary>
+        /// <param name="enabled"><c>true</c> to enable, <c>false</c> to disable (the initial default value is <c>false</c>).</param>
+        public static void SetEnabledForDebuggableBuild(bool enabled)
+        {
+            AndroidDistribute.SetEnabledForDebuggableBuild(enabled);
         }
 
         static Listener _listener;

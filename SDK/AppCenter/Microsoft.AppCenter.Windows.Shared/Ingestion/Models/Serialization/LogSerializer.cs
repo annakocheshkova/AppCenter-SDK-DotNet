@@ -1,11 +1,14 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using Newtonsoft.Json;
 
 namespace Microsoft.AppCenter.Ingestion.Models.Serialization
 {
     public static class LogSerializer
     {
-        private static readonly JsonSerializerSettings SerializationSettings;
+        internal static readonly JsonSerializerSettings SerializationSettings;
         private static readonly LogJsonConverter Converter = new LogJsonConverter();
  
         static LogSerializer()

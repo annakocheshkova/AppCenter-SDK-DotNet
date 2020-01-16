@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 
 namespace Microsoft.AppCenter.Crashes
 {
@@ -32,10 +35,17 @@ namespace Microsoft.AppCenter.Crashes
         public Device Device { get; }
 
         /// <summary>
-        /// Gets the C# Exception object that caused the crashed.
+        /// Gets the C# Exception object that caused the crash.
         /// </summary>
         /// <value>The exception.</value>
+        [ObsoleteAttribute("This property is no longer set due to a security issue, use StackTrace as an alternative.")]
         public Exception Exception { get; }
+
+        /// <summary>
+        /// Gets the C# exception stack trace captured at crash time.
+        /// </summary>
+        /// <value>The exception.</value>
+        public string StackTrace { get; }
 
         /// <summary>
         /// Gets details specific to Android.

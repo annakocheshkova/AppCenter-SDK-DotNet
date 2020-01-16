@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 
 namespace Microsoft.AppCenter.Utils
 {
@@ -6,7 +9,6 @@ namespace Microsoft.AppCenter.Utils
     {
         private const string DefaultValue = "default";
 
-        public static event EventHandler InformationInvalidated;
         protected override string GetSdkName()
         {
             return DefaultValue;

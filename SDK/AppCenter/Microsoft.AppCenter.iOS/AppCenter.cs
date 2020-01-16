@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ObjCRuntime;
@@ -115,7 +118,7 @@ namespace Microsoft.AppCenter
             string parsedSecret;
             try
             {
-                parsedSecret = GetSecretForPlatform(appSecret, PlatformIdentifier);
+                parsedSecret = GetSecretAndTargetForPlatform(appSecret, PlatformIdentifier);
             }
             catch (AppCenterException ex)
             {
@@ -184,6 +187,11 @@ namespace Microsoft.AppCenter
         static void PlatformSetCustomProperties(CustomProperties customProperties)
         {
             iOSAppCenter.SetCustomProperties(customProperties?.IOSCustomProperties);
+        }
+
+        internal static void PlatformUnsetInstance()
+        {
+            iOSAppCenter.ResetSharedInstance();
         }
     }
 }

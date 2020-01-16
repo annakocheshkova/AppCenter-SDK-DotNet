@@ -1,23 +1,53 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using Microsoft.AppCenter;
+using Microsoft.AppCenter.Analytics;
+using Microsoft.AppCenter.Auth;
+using Microsoft.AppCenter.Crashes;
+using Microsoft.AppCenter.Data;
+using Microsoft.AppCenter.Distribute;
+using Microsoft.AppCenter.Push;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AppCenter;
-using Microsoft.AppCenter.Analytics;
-using Microsoft.AppCenter.Crashes;
-using Microsoft.AppCenter.Distribute;
-using Microsoft.AppCenter.Push;
 using Xamarin.Forms;
+using XamarinDevice = Xamarin.Forms.Device;
 
 namespace Contoso.Forms.Demo
 {
-    public partial class App : Application
+    public interface IClearCrashClick
     {
-        const string LogTag = "AppCenterXamarinDemo";
+        void ClearCrashButton();
+    }
 
-        const string uwpKey = "5bce20c8-f00b-49ca-8580-7a49d5705d4c";
-        const string androidKey = "987b5941-4fac-4968-933e-98a7ff29237c";
-        const string iosKey = "fe2bf05d-f4f9-48a6-83d9-ea8033fbb644";
+    public partial class App
+    {
+        public const string LogTag = "AppCenterXamarinDemo";
+
+        // OneCollector secrets
+        static readonly IReadOnlyDictionary<string, string> OneCollectorTokens = new Dictionary<string, string>
+        {
+            { XamarinDevice.Android, "c40f5d207131484ca4b5f945f20863c5-bef11119-61fd-45a6-8a92-daf7a308a7c6-7036" },
+            { XamarinDevice.iOS, "684020093d3844b099ccc5b7d43fc253-4e03393d-1fdc-4f9e-81f4-91fe172d3894-6969" }
+        };
+
+        // App Center B2C secrets
+        static readonly IReadOnlyDictionary<string, string> B2CAuthAppSecrets = new Dictionary<string, string>
+        {
+            { XamarinDevice.UWP, "5bce20c8-f00b-49ca-8580-7a49d5705d4c" }, // same for all devices
+            { XamarinDevice.Android, "987b5941-4fac-4968-933e-98a7ff29237c" },
+            { XamarinDevice.iOS, "fe2bf05d-f4f9-48a6-83d9-ea8033fbb644" }
+        };
+
+        // App Center AAD secrets
+        static readonly IReadOnlyDictionary<string, string> AADAuthAppSecrets = new Dictionary<string, string>
+        {
+            { XamarinDevice.UWP, "5bce20c8-f00b-49ca-8580-7a49d5705d4c" }, // same for all devices
+            { XamarinDevice.Android, "739eacee-42de-454c-b0d7-c093e765e009" },
+            { XamarinDevice.iOS, "e9f015c6-6c2b-4410-8053-70eaa52d90e0" }
+        };
 
         public App()
         {
@@ -25,48 +55,98 @@ namespace Contoso.Forms.Demo
             MainPage = new NavigationPage(new MainDemoPage());
         }
 
+        private string GetOneCollectorTokenString()
+        {
+            return $"androidTarget={OneCollectorTokens[XamarinDevice.Android]};iosTarget={OneCollectorTokens[XamarinDevice.iOS]}";
+        }
+
+        private string GetAppCenterTokenString()
+        {
+            var appSecrets = GetAppSecretDictionary();
+            return $"uwp={appSecrets[XamarinDevice.UWP]};android={appSecrets[XamarinDevice.Android]};ios={appSecrets[XamarinDevice.iOS]}";
+        }
+
+        private string GetTokensString()
+        {
+            var persistedStartType = StartTypeUtils.GetPersistedStartType();
+            switch (persistedStartType)
+            {
+
+                case StartType.OneCollector:
+                    return GetOneCollectorTokenString();
+                case StartType.Both:
+                    return $"{GetAppCenterTokenString()};{GetOneCollectorTokenString()}";
+                default:
+                    return GetAppCenterTokenString();
+            }
+        }
+
         protected override void OnStart()
         {
             if (!AppCenter.Configured)
             {
+                AppCenterLog.Assert(LogTag, "AppCenter.LogLevel=" + AppCenter.LogLevel);
                 AppCenter.LogLevel = LogLevel.Verbose;
-                Crashes.SendingErrorReport += SendingErrorReportHandler;
+                AppCenterLog.Info(LogTag, "AppCenter.LogLevel=" + AppCenter.LogLevel);
+                AppCenterLog.Info(LogTag, "AppCenter.Configured=" + AppCenter.Configured);
+
+                // Set callbacks
+                Crashes.ShouldProcessErrorReport = ShouldProcess;
+                Crashes.ShouldAwaitUserConfirmation = ConfirmationHandler;
+                Crashes.GetErrorAttachments = GetErrorAttachmentsCallback;
+                Distribute.ReleaseAvailable = OnReleaseAvailable;
+
+                // Event handlers
                 Crashes.SendingErrorReport += SendingErrorReportHandler;
                 Crashes.SentErrorReport += SentErrorReportHandler;
                 Crashes.FailedToSendErrorReport += FailedToSendErrorReportHandler;
-                Crashes.ShouldProcessErrorReport = ShouldProcess;
-                Crashes.ShouldAwaitUserConfirmation = ConfirmationHandler;
-                Crashes.GetErrorAttachments = GetErrorAttachments;
-                Distribute.ReleaseAvailable = OnReleaseAvailable;
-                Push.PushNotificationReceived += OnPushNotificationReceived;
-                AppCenter.Start($"uwp={uwpKey};android={androidKey};ios={iosKey}",
-                                   typeof(Analytics), typeof(Crashes), typeof(Distribute), typeof(Push));
+                Push.PushNotificationReceived += PrintNotification;
+
+                AppCenterLog.Assert(LogTag, "AppCenter.Configured=" + AppCenter.Configured);
+
+                AppCenter.Start(GetTokensString(), typeof(Analytics), typeof(Crashes), typeof(Distribute), typeof(Auth), typeof(Data));
+                if (Current.Properties.ContainsKey(Constants.UserId) && Current.Properties[Constants.UserId] is string id)
+                {
+                    AppCenter.SetUserId(id);
+                }
+
+                // Work around for SetUserId race condition.
+                AppCenter.Start(typeof(Push));
+                AppCenter.IsEnabledAsync().ContinueWith(enabled =>
+                {
+                    AppCenterLog.Info(LogTag, "AppCenter.Enabled=" + enabled.Result);
+                });
                 AppCenter.GetInstallIdAsync().ContinueWith(installId =>
                 {
                     AppCenterLog.Info(LogTag, "AppCenter.InstallId=" + installId.Result);
                 });
+                AppCenterLog.Info(LogTag, "AppCenter.SdkVersion=" + AppCenter.SdkVersion);
                 Crashes.HasCrashedInLastSessionAsync().ContinueWith(hasCrashed =>
                 {
                     AppCenterLog.Info(LogTag, "Crashes.HasCrashedInLastSession=" + hasCrashed.Result);
                 });
-                Crashes.GetLastSessionCrashReportAsync().ContinueWith(report =>
+                Crashes.GetLastSessionCrashReportAsync().ContinueWith(task =>
                 {
-                    AppCenterLog.Info(LogTag, "Crashes.LastSessionCrashReport.Exception=" + report.Result?.Exception);
+                    AppCenterLog.Info(LogTag, "Crashes.LastSessionCrashReport.StackTrace=" + task.Result?.StackTrace);
                 });
             }
         }
 
-        protected override void OnSleep()
+        static IReadOnlyDictionary<string, string> GetAppSecretDictionary()
         {
-            // Handle when your app sleeps
+            // If user has selected another Auth Type, override the secret dictionary accordingly.
+            var persistedAuthType = AuthTypeUtils.GetPersistedAuthType();
+            switch (persistedAuthType)
+            {
+                case AuthType.AAD:
+                    return AADAuthAppSecrets;
+                case AuthType.B2C:
+                default:
+                    return B2CAuthAppSecrets;
+            }
         }
 
-        protected override void OnResume()
-        {
-            // Handle when your app resumes
-        }
-
-        static void OnPushNotificationReceived(object sender, PushNotificationReceivedEventArgs e)
+        static void PrintNotification(object sender, PushNotificationReceivedEventArgs e)
         {
             Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
             {
@@ -82,65 +162,16 @@ namespace Contoso.Forms.Demo
         static void SendingErrorReportHandler(object sender, SendingErrorReportEventArgs e)
         {
             AppCenterLog.Info(LogTag, "Sending error report");
-
-            var args = e as SendingErrorReportEventArgs;
-            ErrorReport report = args.Report;
-
-            //test some values
-            if (report.Exception != null)
-            {
-                AppCenterLog.Info(LogTag, report.Exception.ToString());
-            }
-            else if (report.AndroidDetails != null)
-            {
-                AppCenterLog.Info(LogTag, report.AndroidDetails.ThreadName);
-            }
         }
 
         static void SentErrorReportHandler(object sender, SentErrorReportEventArgs e)
         {
             AppCenterLog.Info(LogTag, "Sent error report");
-
-            var args = e as SentErrorReportEventArgs;
-            ErrorReport report = args.Report;
-
-            //test some values
-            if (report.Exception != null)
-            {
-                AppCenterLog.Info(LogTag, report.Exception.ToString());
-            }
-            else
-            {
-                AppCenterLog.Info(LogTag, "No system exception was found");
-            }
-
-            if (report.AndroidDetails != null)
-            {
-                AppCenterLog.Info(LogTag, report.AndroidDetails.ThreadName);
-            }
         }
 
         static void FailedToSendErrorReportHandler(object sender, FailedToSendErrorReportEventArgs e)
         {
             AppCenterLog.Info(LogTag, "Failed to send error report");
-
-            var args = e as FailedToSendErrorReportEventArgs;
-            ErrorReport report = args.Report;
-
-            //test some values
-            if (report.Exception != null)
-            {
-                AppCenterLog.Info(LogTag, report.Exception.ToString());
-            }
-            else if (report.AndroidDetails != null)
-            {
-                AppCenterLog.Info(LogTag, report.AndroidDetails.ThreadName);
-            }
-
-            if (e.Exception != null)
-            {
-                AppCenterLog.Info(LogTag, "There is an exception associated with the failure");
-            }
         }
 
         bool ShouldProcess(ErrorReport report)
@@ -177,7 +208,12 @@ namespace Contoso.Forms.Demo
             return true;
         }
 
-        IEnumerable<ErrorAttachmentLog> GetErrorAttachments(ErrorReport report)
+        static IEnumerable<ErrorAttachmentLog> GetErrorAttachmentsCallback(ErrorReport report)
+        {
+            return GetErrorAttachments();
+        }
+
+        public static IEnumerable<ErrorAttachmentLog> GetErrorAttachments()
         {
             var attachments = new List<ErrorAttachmentLog>();
             if (Current.Properties.TryGetValue(CrashesContentPage.TextAttachmentKey, out var textAttachment) &&
@@ -213,7 +249,7 @@ namespace Contoso.Forms.Demo
 
         bool OnReleaseAvailable(ReleaseDetails releaseDetails)
         {
-            AppCenterLog.Info("AppCenterDemo", "OnReleaseAvailable id=" + releaseDetails.Id
+            AppCenterLog.Info(LogTag, "OnReleaseAvailable id=" + releaseDetails.Id
                                             + " version=" + releaseDetails.Version
                                             + " releaseNotesUrl=" + releaseDetails.ReleaseNotesUrl);
             var custom = releaseDetails.ReleaseNotes?.ToLowerInvariant().Contains("custom") ?? false;
@@ -231,7 +267,7 @@ namespace Contoso.Forms.Demo
                 }
                 answer.ContinueWith((task) =>
                 {
-                    if (releaseDetails.MandatoryUpdate || (task as Task<bool>).Result)
+                    if (releaseDetails.MandatoryUpdate || ((Task<bool>)task).Result)
                     {
                         Distribute.NotifyUpdateAction(UpdateAction.Update);
                     }

@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -77,9 +80,31 @@ namespace Microsoft.AppCenter.Crashes
             });
         }
 
-        static void PlatformTrackError(Exception exception, IDictionary<string, string> properties)
+        static Task<bool> PlatformHasReceivedMemoryWarningInLastSessionAsync()
         {
-            WrapperSdkExceptionManager.TrackException(GenerateModelException(exception, false), properties);
+            var future = AndroidCrashes.HasReceivedMemoryWarningInLastSession();
+            return Task.Run(() => (bool)future.Get());
+        }
+
+        static void PlatformTrackError(Exception exception, IDictionary<string, string> properties, ErrorAttachmentLog[] attachments)
+        {
+            ArrayList attachmentArray = null;
+            if (attachments != null)
+            {
+                attachmentArray = new ArrayList();
+                foreach (var attachment in attachments)
+                {
+                    if (attachment?.internalAttachment != null)
+                    {
+                        attachmentArray.Add(attachment.internalAttachment);
+                    }
+                    else
+                    {
+                        AppCenterLog.Warn(LogTag, "Skipping null ErrorAttachmentLog in Crashes.TrackError.");
+                    }
+                }
+            }
+            WrapperSdkExceptionManager.TrackException(GenerateModelException(exception, false), properties, attachmentArray);
         }
 
         // Empty model stack frame used for comparison to optimize JSON payload.
@@ -123,8 +148,8 @@ namespace Microsoft.AppCenter.Crashes
                 AppCenterLog.Error(LogTag, $"Unhandled Exception from source={source}", exception);
                 var javaThrowable = exception as Throwable;
                 var modelException = GenerateModelException(exception, true);
-                byte[] rawException = javaThrowable == null ? CrashesUtils.SerializeException(exception) : null;
-                WrapperSdkExceptionManager.SaveWrapperException(Thread.CurrentThread(), javaThrowable, modelException, rawException);
+                string rawExceptionString = javaThrowable == null ? exception.ToString() : null;
+                WrapperSdkExceptionManager.SaveWrapperException(Thread.CurrentThread(), javaThrowable, modelException, rawExceptionString);
                 _exception = exception;
             }
         }

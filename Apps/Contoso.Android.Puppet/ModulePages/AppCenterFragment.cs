@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using Android.Content;
 using Android.OS;
@@ -114,7 +117,7 @@ namespace Contoso.Android.Puppet
 
         private void UserIdTextKeyPressedHandler(object sender, View.KeyEventArgs e)
         {
-            if (e.Event.Action == KeyEventActions.Down && e.KeyCode == Keycode.Enter)
+            if (e.Event.Action == KeyEventActions.Up)
             {
                 var text = string.IsNullOrEmpty(UserIdText.Text) ? null : UserIdText.Text;
                 AppCenter.SetUserId(text);

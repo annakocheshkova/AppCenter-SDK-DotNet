@@ -1,6 +1,514 @@
 # App Center SDK for .NET Change Log
 
-## Version 1.13.0 
+## Version 2.6.5 （Under development）
+
+### App Center
+
+#### UWP
+
+* **[Feature]** Support ARM64 architecture.
+* **[Breaking change]** The minimum supported Window 10 version is now `10.0.16299.0`.
+
+#### WPF/WinForms
+
+* **[Breaking change]** The minimum supported version of .NET Framework is now `4.6.1`.
+
+#### UWP/WPF/WinForms
+
+* **[Dependency changes]** Update `SQLitePCLRaw.bundle_green` dependency to version `2.0.2` and remove dependency from `sqlite-net-pcl`.
+
+___
+
+## Version 2.6.4
+
+### App Center
+
+#### WPF/WinForms
+
+* **[Fix]** Use explicit dependencies for .NET Framework assemblies to avoid runtime errors in some applications.
+
+#### UWP/WPF/WinForms
+
+* **[Fix]** Fix sending remaining pending logs after sending 3 concurrent HTTP requests.
+* **[Fix]** The SDK was considering 201-299 status code as HTTP errors and is now fixed to accept all 2XX codes as successful.
+
+#### Android
+
+* **[Fix]** Fix `MissingMethodException` of `String.Split()` with some build configurations (a bug introduced in version `2.5.0`).
+
+#### iOS
+
+* **[Fix]** Improve log messages for errors when it failed to read/write auth token history.
+
+### App Center Crashes
+
+#### Android
+
+* **[Fix]** Validate error attachment size to avoid server error or out of memory issues (using the documented limit which is 7MB).
+
+#### iOS
+
+* **[Fix]** Fix sending crashes if an application is launched in background.
+* **[Fix]** Validate error attachment size to avoid server error or out of memory issues (using the documented limit which is 7MB).
+* **[Fix]** Fix an issue where crash might contain incorrect data if two consecutive crashes occurred in a previous version of the application.
+
+### App Center Auth
+
+#### iOS
+
+* **[Fix]** Fix build warnings when adding App Center Auth framework in project.
+
+### App Center Distribute
+
+#### iOS
+
+* **[Fix]** Fix missing alert dialogs in apps that use iOS 13's new UIScene API (multiple scenes are not yet supported).
+* **[Fix]** Fix an issue where users would sometimes be prompted multiple times to sign in with App Center.
+
+___
+
+## Version 2.6.2
+
+### App Center
+
+#### WPF/WinForms
+
+* **[Fix]** Fix an error on running same application twice and enabling App Center.
+
+#### UWP/WPF/WinForms
+
+* **[Fix]** Fix an issue where internal SDK exceptions would sometimes be "unobserved" and would cause undefined behavior.
+* **[Fix]** The SDK now detects the SQLite database is corrupted and deletes it and creates a new one to start over.
+
+### App Center Crashes
+
+#### UWP/WPF/WinForms
+
+* **[Fix]** Validate error attachment size to avoid server error or out of memory issues (using the documented limit which is 7MB).
+
+#### UWP
+
+* **[Fix]** Fix NuGet package dependency.
+
+### AppCenterDistribute
+
+#### iOS
+
+* **[Fix]** Fix native link error when using Distribute module without Auth and building for real devices.
+
+___
+
+## Version 2.6.1
+
+### App Center
+
+#### iOS
+
+* **[Fix]** Fix warnings in Xcode 11 when SDK is installed via CocoaPods.
+
+#### Xamarin
+
+* **[Fix]** Updated Android support packages versions to `28.0.0.3` for Auth and Push modules.
+
+### App Center Crashes
+
+* **[Feature]** Support sending attachments in handled errors.
+
+### App Center Distribute
+
+#### Android
+
+* **[Fix]** Fix an in-app update caching issue, where the same version was installed constantly after the 1st successful update (or also if the download was canceled).
+
+___
+
+## Version 2.5.0
+
+### App Center
+
+#### Windows
+
+* **[Fix]** Update `Newtonsoft.Json` dependency to version `12.0.2`.
+
+#### .NET Core 3
+
+* **[Fix]** Fix using stable versions of NuGet dependencies for .NET Core 3.0.
+
+### App Center Crashes
+
+#### UWP
+
+* **[Feature]** App Center now supports crashes for sideloaded UWP applications.
+* **[Feature]** APIs in the Crashes module are now implemented for UWP: handled errors, crash attachments, crash callbacks, getting crash information about last session, and enabling/disabling the module. Detecting low memory warning is not supported.
+
+#### UWP/WPF/WinForms
+
+* **[Feature]** Allow users to set userId that applies to crashes and errors.
+
+#### Android
+
+* **[Breaking change]** Remove insecure implementation of the raw `AndroidErrorDetails.Throwable` property (now always returns `null` and marked as obsolete), and provide `string StackTrace` property as an alternative on Xamarin.Android.
+
+### App Center Push
+
+#### UWP
+
+* **[Feature]** Allow developers to push notifications to a specific userId.
+
+### App Center Distribute
+
+#### Android
+
+* **[Fix]** Downloading in-app update APK file has been failing on Android 4.x since TLS 1.2 has been enforced early September. The file is now downloaded using HTTPS direct connection when running on Android 4 instead of relying on system's download manager.
+* **[Fix]** Fix a crash and improve logging when downloading an update fails on Android 5+.
+* **[Breaking change]** If your minSdkVersion is lower than 19, Android requires the WRITE_EXTERNAL_STORAGE permission to store new downloaded updates. Please refer to the updated documentation site for detailed instructions. This is related to the download fix.
+
+### App Center Data
+
+* **[Fix]** Reduced retries on Data-related operations to fail fast and avoid the perception of calls "hanging".
+
+___
+
+## Version 2.4.0-preview
+
+### App Center
+
+#### WPF/WinForms
+
+* **[Fix]** Fix application version being reported for ClickOnce deployments.
+
+### App Center Auth
+
+#### iOS
+
+* **[Fix]** Redirect URIs are now hidden in logs.
+* **[Fix]** Fix interactive sign in on iOS 13. Temporary fix, will be revisited in the future.
+* **[Feature]** Updated the Microsoft Authentication Library dependency to v0.7.0.
+
+### App Center Analytics
+
+#### iOS
+
+* **[Fix]** Fix crash involving SDK's `ms_viewWillAppear` method.
+
+### App Center Push
+
+#### Android
+
+* **[Breaking change]** Update Google Play Services' and Firebase's versions to v71 in Push module which forces applications to use Android 9.0 Mono frameworks in build options. This has no impact on minimum Android SDK version which remains API level 16.
+
+### App Center Crashes
+
+* **[Breaking change]** Remove insecure implementation of the raw `ErrorReport.Exception` property (now always returns `null` and marked as obsolete), and provide `string StackTrace` property as an alternative on Xamarin, UWP, WPF and WinForms.
+
+#### WinForms
+
+* **[Fix]** Don't prevent WinForms applications from crashing. If unhandled exceptions are handled by the application, they must now be reported using `Crashes.TrackError` to be displayed on AppCenter, see the [public documentation](https://docs.microsoft.com/en-us/appcenter/sdk/crashes/wpf-winforms) for more details about this change.
+
+## Version 2.3.0-preview
+
+This preview version adds support for .NET Core 3.0 WPF and WinForms applications for the Analytics and Crashes modules.
+
+This preview version removes Crashes support for UWP. The App Center backend is not yet ready to process UWP crashes using the system introduced in this version. If your app relies on UWP crashes, do not update to this preview version.
+
+### App Center
+
+#### WPF/WinForms
+
+* **[Fix]** Fix configuration file location to be in a user-specific directory.
+
+### App Center Analytics
+
+#### Windows
+
+* **[Fix]** Fix reporting the incorrect device models when a placeholder was used in some cases.
+
+#### WPF/WinForms
+
+* **[Feature]** Add support for .NET Core 3.0 applications.
+* **[Fix]** Optimize minimized window detection.
+
+### App Center Crashes
+
+#### Android and iOS
+
+* **[Feature]** Catch "low memory warning" and provide the API to check if it has happened in last session: `Crashes.HasReceivedMemoryWarningInLastSession()`.
+
+#### WPF/WinForms
+
+* **[Feature]** Add support for .NET Core 3.0 applications.
+* **[Fix]** Wait to finish processing files before deleting files when calling `SetEnabledAsync(false)` during processing.
+
+### App Center Distribute
+
+#### iOS
+
+* **[Fix]** Obfuscate app secret value that appears as URI part in verbose logs for in-app updates.
+
+### App Center Push
+
+#### Android
+
+* **[Fix]** Fix confusing information log about the availability of the Firebase SDK.
+* **[Fix]** Fix sending the push installation log after delayed start.
+
+### App Center Auth
+
+#### iOS
+
+* **[Feature]** App Center Auth logging now includes MSAL logs.
+
+#### Android
+
+* **[Feature]** App Center Auth logging now includes MSAL logs.
+* **[Fix]** Redirect URIs are now hidden in logs.
+
+___
+
+## Version 2.2.1-preview
+
+This preview version adds support for WPF and WinForms applications for the Analytics and Crashes modules.
+
+This preview version removes Crashes support for UWP. The App Center backend is not yet ready to process UWP crashes using the system introduced in this version. If your app relies on UWP crashes, do not update to this preview version.
+
+### App Center
+
+* **[Breaking Change]** This version is no longer compatible with PCL. Migrating to .NET standard is now required for portable libraries using the AppCenter SDK.
+
+#### Android
+
+* **[Fix]** Remove unsecure UUID fallback for UUID generation failures that cannot occur in reality.
+
+#### WPF/WinForms
+
+* **[Feature]** APIs from the `AppCenter` class can now be consumed in WPF and WinForms applications (except `AppCenter.SetUserId`).
+
+### App Center Analytics
+
+#### UWP
+
+* **[Fix]** Fix validation of `TrackEvent` that was sending the event without properties instead of removing the invalid ones.
+
+#### WPF/WinForms
+
+* **[Feature]** Add support for WPF and WinForms.
+
+### App Center Crashes
+
+#### WPF/WinForms
+
+* **[Feature]** Add support for WPF and WinForms. User identification is not currently supported.
+
+#### UWP
+
+* **[Breaking Change]** This version introduces a breaking change where the SDK no longers register with Windows error reporting. UWP developers using the Crashes module must keep using the latest stable release (2.1.1).
+
+#### iOS
+
+* **[Fix]** Fix possible deadlock in `Crashes.TrackError`.
+
+#### Android
+
+* **[Fix]** The in-memory cache of error reports is now cleared when disabling Crashes.
+
+### App Center Push
+
+#### Xamarin
+
+* **[Fix]** Updated Android support packages to 28.0.0.1 version in Push module.
+
+### App Center Data
+
+#### Xamarin
+
+* **[Feature]** Add support for offline list of documents.
+* **[Feature]** Change the default time-to-live (TTL) from 1 day to infinite (never expire).
+* **[Feature]** Add `ReadOptions` parameter to the `list` API.
+* **[Feature]** Deserialization errors are now exposed through the document `Error` property (and leaving `DeserializedValue` null) instead of throwing an exception.
+* **[Feature]** Serialize `null` document values.
+
+#### Android
+
+* **[Fix]** Allow null for `ReadOptions` and `WriteOptions` parameters.
+
+### App Center Distribute
+
+#### iOS
+
+* **[Fix]** Fix crash when an application was minimized while trying to reinstall after setup failure.
+
+___
+
+## Version 2.1.1
+
+### App Center Distribute
+
+#### iOS
+
+* **[Fix]** Fix a crash (regression from version 2.1.0) when checking for in-app updates.
+
+___
+
+## Version 2.1.0
+
+### App Center
+
+#### iOS
+
+* **[Fix]** Improve encryption security.
+
+### App Center Crashes
+
+#### iOS
+
+* **[Fix]** Fix a crash when tracking an exception without a message.
+
+### App Center Distribute
+
+#### Android
+
+* **[Feature]** Add `Distribute.SetEnabledForDebuggableBuild(bool)` method to allow in-app updates in debuggable builds.
+* **[Fix]** Fix duplicate in-app update dialog when restarting (or switching) activity quickly after clicking download. Also fixes a crash when choosing "Ask me in a day" in the duplicate dialog.
+* **[Fix]** Fix a crash that could occur when downloading the update with a customized dialog and then calling `Distribute.NotifyUserConfirmation(UpdateAction.Postpone)` right after calling `Distribute.NotifyUserConfirmation(UpdateAction.Update)`.
+
+### App Center Auth
+
+* **[Feature]** Expose the ID Token and Access Token (as raw JWT format) in the `UserInformation` object returned from the sign-in method.
+* **[Breaking change]** The `UserInformation` class has been moved from the `Microsoft.AppCenter` namespace to `Microsoft.AppCenter.Auth` namespace.
+
+#### Android
+
+* **[Fix]** Fix missing proguard rules so that the app does not have to specify them.
+* **[Fix]** Fix crash on silently refreshing token if initialization of MSAL fails.
+
+#### iOS
+
+* **[Fix]** Fix changing signing status may cause logs (e.g., events) to be delayed.
+* **[Fix]** Validate custom URL scheme before starting Auth and log an error message when it is invalid.
+
+### App Center Data
+
+* **[Fix]** Fix an issue where invalid characters in the document ID are accepted at creation time but causing errors while trying to read or delete the document. The characters are `#`, `\`, `/`, `?`, and all whitespaces.
+
+#### iOS
+
+* **[Fix]** Fix document serialization/deserialization to handle non string types inside an object.
+
+___
+
+## Version 2.0.0
+
+Version 2.0.0 of the App Center SDK includes two new modules: Auth and Data.
+
+These new modules are only supported in Xamarin (Android and iOS).
+
+This version has a **breaking change** for Xamarin.iOS, it only supports Xcode 10.0.0+ and Mono 5.12+.
+
+### App Center Auth
+
+App Center Auth is a cloud-based identity management service that enables you to authenticate users and manage their identities. You can also leverage user identities in other App Center services.
+
+### App Center Data
+
+The App Center Data service provides functionality enabling developers to persist app data in the cloud in both online and offline scenarios. This enables you to store and manage both user-specific data as well as data shared between users and across platforms.
+
+### App Center Crashes
+
+* **[Fix]** Fix intellisense for APIs.
+
+#### Xamarin
+
+* **[Feature]** After calling `Auth.SignInAsync()`, the next crashes are associated with an `accountId` corresponding to the signed in user. This is a different field than the `userId` set by `AppCenter.SetUserId(string)`. Calling `Auth.SignOut()` stops the `accountId` association for the next crashes.
+
+##### iOS
+
+* **[Fix]** Print an error and return immediately when calling `Crashes.NotifyUserConfirmation(UserConfirmation)` with confirmation handlers not implemented.
+
+### App Center Distribute
+
+* **[Fix]** Fix intellisense for APIs.
+
+#### iOS
+
+* **[Fix]** Starting the application with "Guided Access" enabled blocks the update flow since in-app update is not possible in this mode.
+
+#### Android
+
+* **[Fix]** Fix in-app updates not working on new Samsung devices.
+
+### App Center Push
+
+* **[Fix]** Fix intellisense for APIs.
+
+#### Xamarin
+
+* **[Feature]** After calling `Auth.SignInAsync()`, the push installation is associated to the signed in user with an `accountId` and can be pushed by using the `accountId` audience. This is a different field than the `userId` set by `AppCenter.SetUserId(string)`. The push installation is also updated on calling `Auth.SignOut()` to stop the association.
+* **[Fix]** Fix updating push installation when setting or unsetting the user identifier by calling `AppCenter.setUserId`.
+
+___
+
+## Version 1.14.0
+
+### AppCenter
+
+#### iOS
+
+* **[Fix]** Fix a crash in case decrypting a value failed.
+
+#### Android
+
+* **[Fix]** Fix network connection state tracking issue, which prevented sending data in some restricted networks.
+* **[Fix]** Fix possible deadlock on changing network connection state.
+
+### AppCenterPush
+
+#### iOS
+
+* **[Fix]** Fix crash on invoking an optional push callback when it isn't implemented in the push delegate.
+
+### AppCenterDistribute
+
+#### Android
+
+* **[Fix]** Fix in-app updates not working on devices using Xiaomi MIUI from versions 10 and above.
+
+___
+
+## Version 1.13.2
+
+### AppCenter
+
+* **[Improvement]** Add missing XML documentation in the NuGet packages.
+
+#### Android
+
+* **[Fix]** The SDK normally disables storing and sending logs when SQLite is failing instead of crashing the application. New SQLite APIs were introduced in version 1.9.0 and the new API exceptions were not caught, this is now fixed.
+
+#### iOS
+
+* **[Fix]** Fix a possible deadlock if the SDK is started from a background thread.
+* **[Fix]** Fix a crash if database query failed.
+
+### AppCenterDistribute
+
+#### Android
+
+* **[Fix]** Fix exception if we receive deep link intent with setup failure before onStart.
+* **[Fix]** Fix checking updates for applications installed on corporate-owned single-use devices.
+
+#### iOS
+
+* **[Fix]** Fix a race condition crash on upgrading the application to newer version.
+
+### AppCenterCrashes
+
+#### iOS
+
+* **[Fix]** Fix a crash on iOS when triggering null reference exception and starting Crashes in background. The conditon might still occur very rarely if trigger a null reference exception in another thread during the short time where the [SDK configures native crash reporter](https://www.mono-project.com/docs/advanced/signals/). It is thus recommended to initialize AppCenter Crashes as early as possible (which is also recommended to capture early crashes).
+
+___
+
+## Version 1.13.0
 
 ### AppCenter
 
@@ -222,7 +730,7 @@ This version contains bug fixes.
 
 #### iOS
 
-* **[Fix #670]** [Previous release](https://github.com/Microsoft/AppCenter-SDK-DotNet/releases/tag/1.6.0) was unintentionally requiring Mono 5.8 on iOS applications. This build issue is now fixed.
+* **[Fix #670]** [Previous release](https://github.com/microsoft/appcenter-sdk-dotnet/releases/tag/1.6.0) was unintentionally requiring Mono 5.8 on iOS applications. This build issue is now fixed.
 
 #### UWP
 
@@ -448,9 +956,9 @@ ___
 
 ## Version 1.0.1
 
-This release fixes the NuGet packages that were released for [1.0.0](https://github.com/Microsoft/AppCenter-SDK-DotNet/releases/tag/1.0.0).
+This release fixes the NuGet packages that were released for [1.0.0](https://github.com/microsoft/appcenter-sdk-dotnet/releases/tag/1.0.0).
 
-Please read the [1.0.0 release notes](https://github.com/Microsoft/AppCenter-SDK-DotNet/releases/tag/1.0.0) if you are not yet aware of this version.
+Please read the [1.0.0 release notes](https://github.com/microsoft/appcenter-sdk-dotnet/releases/tag/1.0.0) if you are not yet aware of this version.
 
 Fixes from 1.0.1:
 

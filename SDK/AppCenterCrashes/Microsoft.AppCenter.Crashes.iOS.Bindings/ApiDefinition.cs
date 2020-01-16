@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System;
 using Foundation;
 using ObjCRuntime;
@@ -78,6 +81,11 @@ namespace Microsoft.AppCenter.Crashes.iOS.Bindings
         [Export("hasCrashedInLastSession")]
         bool HasCrashedInLastSession { get; }
 
+        //(BOOL)hasReceivedMemoryWarningInLastSession;
+        [Static]
+        [Export("hasReceivedMemoryWarningInLastSession")]
+        bool HasReceivedMemoryWarningInLastSession { get; }
+
         //(MSErrorReport * _Nullable)lastSessionCrashReport;
         [Static]
         [NullAllowed, Export("lastSessionCrashReport")]
@@ -102,16 +110,6 @@ namespace Microsoft.AppCenter.Crashes.iOS.Bindings
         [Static]
         [Export("disableMachExceptionHandler")]
         void DisableMachExceptionHandler();
-
-        //+(void)trackModelException:(MSException *)exception;
-        [Static]
-        [Export("trackModelException:")]
-        void TrackModelException(MSException exception);
-
-        //+(void)trackModelException:(MSException *)exception withProperties:(NSDictionary *)properties;
-        [Static]
-        [Export("trackModelException:withProperties:")]
-        void TrackModelException(MSException exception, NSDictionary properties);
     }
 
     // @protocol MSCrashesDelegate <NSObject>
@@ -276,5 +274,10 @@ namespace Microsoft.AppCenter.Crashes.iOS.Bindings
         [Static]
         [Export("setCrashHandlerSetupDelegate:")]
         void SetCrashHandlerSetupDelegate(MSCrashHandlerSetupDelegate del);
+
+        //+(void)trackModelException:(MSException *)exception withProperties:(NSDictionary *)properties withAttachments:(nullable NSArray<MSErrorAttachmentLog *> *)attachments;
+        [Static]
+        [Export("trackModelException:withProperties:withAttachments:")]
+        void TrackModelException(MSException exception, NSDictionary properties, NSArray attachments);
     }
 }

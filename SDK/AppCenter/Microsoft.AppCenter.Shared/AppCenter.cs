@@ -1,4 +1,9 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Microsoft.AppCenter
@@ -8,10 +13,24 @@ namespace Microsoft.AppCenter
     /// </summary>
     public partial class AppCenter
     {
-        // Gets the first instance of an app secret corresponding to the given platform name, or returns the string 
+        const string SecretDelimiter = ";";
+        const string PlatformKeyValueDelimiter = "=";
+        const string TargetKeyName = "target";
+        const string TargetKeyNameUpper = "Target";
+        const string AppSecretKeyName = "appsecret";
+        const string SecretsPattern = @"([^;=]+)=([^;=]+);?";
+
+#if NETSTANDARD
+        static readonly Regex _secretsRegex = new Regex(SecretsPattern);
+#else
+        static readonly Regex _secretsRegex = new Regex(SecretsPattern, RegexOptions.Compiled);
+#endif
+
+        // Gets the first instance of an app sceret and/or target token corresponding to the given platform name, or returns the string 
         // as-is if no identifier can be found. Logs a message if no identifiers can be found.
-        internal static string GetSecretForPlatform(string secrets, string platformIdentifier)
+        internal static string GetSecretAndTargetForPlatform(string secrets, string platformIdentifier)
         {
+            var platformTargetIdentifier = platformIdentifier + TargetKeyNameUpper;
             if (string.IsNullOrEmpty(secrets))
             {
                 throw new AppCenterException("App secrets string is null or empty");
@@ -19,39 +38,56 @@ namespace Microsoft.AppCenter
 
             // If there are no equals signs, then there are no named identifiers, but log a message in case the developer made 
             // a typing error.
-            if (!secrets.Contains("="))
+            if (!secrets.Contains(PlatformKeyValueDelimiter))
             {
                 AppCenterLog.Debug(AppCenterLog.LogTag, "No named identifier found in appSecret; using as-is");
                 return secrets;
             }
 
-            var parseErrorMessage = $"Error parsing key for '{platformIdentifier}'";
-
-            var platformIndicator = platformIdentifier + "=";
-            var secretIdx = secrets.IndexOf(platformIndicator, StringComparison.Ordinal);
-            if (secretIdx == -1)
+            // Iterate over matching patterns.
+            var secretsDictionary = new Dictionary<string, string>();
+            var matches = _secretsRegex.Matches(secrets);
+            foreach (Match match in matches)
             {
-                throw new AppCenterException(parseErrorMessage);
+                secretsDictionary[match.Groups[1].Value] = match.Groups[2].Value;
             }
-            secretIdx += platformIndicator.Length;
+
+            // Extract the secrets for the current platform.
+            if (secretsDictionary.ContainsKey(TargetKeyName))
+            {
+                AppCenterLog.Debug(AppCenterLog.LogTag, "Found 'target=' identifier in the secret; using as-is.");
+                return secrets;
+            }
+            if (secretsDictionary.ContainsKey(AppSecretKeyName))
+            {
+                AppCenterLog.Debug(AppCenterLog.LogTag, "Found 'appSecret=' identifier in the secret; using as-is.");
+                return secrets;
+            }
             var platformSecret = string.Empty;
-
-            while (secretIdx < secrets.Length)
+            var platformTargetToken = string.Empty;
+            if (secretsDictionary.ContainsKey(platformIdentifier))
             {
-                var nextChar = secrets[secretIdx++];
-                if (nextChar == ';')
+                secretsDictionary.TryGetValue(platformIdentifier, out platformSecret);
+            }
+            if (secretsDictionary.ContainsKey(platformTargetIdentifier))
+            {
+                secretsDictionary.TryGetValue(platformTargetIdentifier, out platformTargetToken);
+            }
+            if (string.IsNullOrEmpty(platformSecret) && string.IsNullOrEmpty(platformTargetToken))
+            {
+                throw new AppCenterException($"Error parsing key for '{platformIdentifier}'");
+            }
+
+            // Format the string as "appSecret={};target={}" or "target={}" if needed.
+            if (!string.IsNullOrEmpty(platformTargetToken))
+            {
+                // If there is an app secret
+                if (!string.IsNullOrEmpty(platformSecret))
                 {
-                    break;
+                    platformSecret = AppSecretKeyName + PlatformKeyValueDelimiter + platformSecret + SecretDelimiter;
                 }
-
-                platformSecret += nextChar;
+                platformSecret += TargetKeyName + PlatformKeyValueDelimiter + platformTargetToken;
             }
-
-            if (platformSecret == string.Empty)
-            {
-                throw new AppCenterException(parseErrorMessage);
-            }
-
             return platformSecret;
         }
 
@@ -160,6 +196,11 @@ namespace Microsoft.AppCenter
         public static void SetCustomProperties(CustomProperties customProperties)
         {
             PlatformSetCustomProperties(customProperties);
+        }
+
+        internal static void UnsetInstance()
+        {
+            PlatformUnsetInstance();
         }
     }
 }

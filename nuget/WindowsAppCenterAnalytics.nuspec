@@ -12,16 +12,24 @@
     <tags>app center appcenter analytics mobilecenter</tags>
     <language>en-US</language>
     <projectUrl>https://aka.ms/telgml</projectUrl>
-    <licenseUrl>https://aka.ms/vbgfx2</licenseUrl>
+    <license type="expression">MIT</license>
     <iconUrl>https://aka.ms/k76877</iconUrl>
     <dependencies>
       <dependency id="Microsoft.AppCenter" version="$version$" />
     </dependencies>
   </metadata>
   <files>
-    <file src="$uwp_dir$/Microsoft.AppCenter.Analytics.dll" target="lib/uap10.0" />
 
-    <!-- TODO: Uncomment when it's time to release these. -->
-    <!--file src="$windows_desktop_dir$/Microsoft.AppCenter.Analytics.dll" target="lib/net45" /-->
+    <!-- UWP -->
+    <file src="$uwp_dir$/Microsoft.AppCenter.Analytics.dll" target="lib/uap10.0" />
+    <file src="$uwp_dir$/Microsoft.AppCenter.Analytics.xml" target="lib/uap10.0" />
+
+    <!-- WindowsDesktop (WPF and WinForms) for .NET Framework -->
+    <file src="$windows_desktop_dir$/Microsoft.AppCenter.Analytics.dll" target="lib/net461" />
+    <file src="$windows_desktop_dir$/Microsoft.AppCenter.Analytics.xml" target="lib/net461" />
+
+    <!-- WindowsDesktop (WPF and WinForms) for .NET Core -->
+    <file src="$windows_desktop_netcore_dir$/Microsoft.AppCenter.Analytics.dll" target="lib/netcoreapp3.0" />
+    <file src="$windows_desktop_netcore_dir$/Microsoft.AppCenter.Analytics.xml" target="lib/netcoreapp3.0" />
   </files>
 </package>

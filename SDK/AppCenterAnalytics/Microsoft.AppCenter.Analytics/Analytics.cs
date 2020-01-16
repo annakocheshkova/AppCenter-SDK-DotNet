@@ -1,13 +1,15 @@
-﻿using System.Collections.Generic;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Microsoft.AppCenter.Analytics
 {
-    /// <inheritdoc />
     /// <summary>
     ///     Analytics feature.
     /// </summary>
-    public class Analytics : IAppCenterService
+    public class Analytics
     {
         private Analytics()
         {
@@ -56,5 +58,9 @@ namespace Microsoft.AppCenter.Analytics
         //{
         //    throw new NotImplementedException();
         //}
+
+        internal static void UnsetInstance()
+        {
+        }
     }
 }

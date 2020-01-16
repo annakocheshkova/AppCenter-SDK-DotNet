@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using Android.App;
 using Com.Microsoft.Appcenter;
@@ -113,7 +116,7 @@ namespace Microsoft.AppCenter
             string parsedSecret;
             try
             {
-                parsedSecret = GetSecretForPlatform(appSecret, PlatformIdentifier);
+                parsedSecret = GetSecretAndTargetForPlatform(appSecret, PlatformIdentifier);
             }
             catch (AppCenterException ex)
             {
@@ -158,7 +161,11 @@ namespace Microsoft.AppCenter
             if (monoAssemblyVersionAttibutes?.Length > 0)
             {
                 xamarinAndroidVersion = monoAssemblyVersionAttibutes[0].InformationalVersion;
-                xamarinAndroidVersion = xamarinAndroidVersion?.Split(';')[0];
+                var indexOfVersion = xamarinAndroidVersion?.IndexOf(';') ?? -1;
+                if (indexOfVersion >= 0)
+                {
+                    xamarinAndroidVersion = xamarinAndroidVersion?.Substring(0, indexOfVersion + 1);
+                }
             }
             var wrapperSdk = new AndroidWrapperSdk
             {
@@ -195,6 +202,11 @@ namespace Microsoft.AppCenter
         static void PlatformSetCustomProperties(CustomProperties customProperties)
         {
             AndroidAppCenter.SetCustomProperties(customProperties.AndroidCustomProperties);
+        }
+
+        internal static void PlatformUnsetInstance()
+        {
+            AndroidAppCenter.UnsetInstance();
         }
     }
 }

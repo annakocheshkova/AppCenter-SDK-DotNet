@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using Foundation;
 
 namespace Microsoft.AppCenter.Analytics.iOS.Bindings
@@ -30,6 +33,11 @@ namespace Microsoft.AppCenter.Analytics.iOS.Bindings
         [Static]
         [Export("setDelegate:")]
         void SetDelegate([NullAllowed] MSAnalyticsDelegate analyticsDelegate);
+
+        // + (void)resetSharedInstance
+        [Static]
+        [Export("resetSharedInstance")]
+        void ResetSharedInstance();
 
         //// +(void)trackPage:(NSString *)pageName;
         //[Static]

@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -9,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.AppCenter.Ingestion.Http
 {
-    public sealed class HttpNetworkAdapter : IHttpNetworkAdapter
+    public sealed partial class HttpNetworkAdapter : IHttpNetworkAdapter
     {
         internal const string ContentTypeValue = "application/json; charset=utf-8";
 
@@ -73,7 +76,7 @@ namespace Microsoft.AppCenter.Ingestion.Http
                 }
                 var logMessage = $"HTTP response status={(int)response.StatusCode} ({response.StatusCode}) payload={logPayload}";
                 AppCenterLog.Verbose(AppCenterLog.LogTag, logMessage);
-                if (response.StatusCode != HttpStatusCode.OK)
+                if ((int)response.StatusCode < 200 || (int)response.StatusCode >= 300)
                 {
                     throw new HttpIngestionException(logMessage)
                     {

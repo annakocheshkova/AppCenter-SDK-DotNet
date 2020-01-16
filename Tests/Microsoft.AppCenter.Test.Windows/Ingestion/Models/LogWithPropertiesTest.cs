@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using Microsoft.AppCenter.Ingestion.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -35,6 +38,6 @@ namespace Microsoft.AppCenter.Test.Windows.Ingestion.Models
     {
         public TestLogWithProperties() { }
         public TestLogWithProperties(DateTime? timestamp, Device device, Guid? sid = default(Guid?), IDictionary<string, string> properties = default(IDictionary<string, string>))
-            : base(device, timestamp, sid, properties) { }
+            : base(device, timestamp, sid, null, properties) { }
     }
 }

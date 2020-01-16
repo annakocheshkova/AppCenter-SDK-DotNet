@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Foundation;
@@ -85,6 +88,11 @@ namespace Microsoft.AppCenter.Analytics
         //	}
         //	iOSAnalytics.TrackPage(name);
         //}
+
+        internal static void UnsetInstance()
+        {
+            iOSAnalytics.ResetSharedInstance();
+        }
 
         private static NSDictionary StringDictToNSDict(IDictionary<string, string> dict)
         {

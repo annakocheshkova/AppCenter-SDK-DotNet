@@ -12,52 +12,45 @@
     <tags>app center appcenter crashes mobilecenter</tags>
     <language>en-US</language>
     <projectUrl>https://aka.ms/telgml</projectUrl>
-    <licenseUrl>https://aka.ms/vbgfx2</licenseUrl>
+    <license type="expression">MIT</license>
     <iconUrl>https://aka.ms/k76877</iconUrl>
     <dependencies>
-      <dependency id="Microsoft.AppCenter" version="$version$" />
+      <group>
+        <dependency id="Microsoft.AppCenter" version="$version$" />
+      </group>
+      <group targetFramework="uap10.0">
+        <dependency id="Microsoft.AppCenter" version="$version$" />
+        <dependency id="System.Reflection.Metadata" version="1.7.0" />
+      </group>
     </dependencies>
     <version>$version$</version>
   </metadata>
   <files>
 
-    <!-- Portable -->
-    <file src="$pcl_dir$/Microsoft.AppCenter.Crashes.dll" target="lib/portable-net45+win8+wpa81+wp8" />
-
     <!-- .NET Standard -->
     <file src="$netstandard_dir$/Microsoft.AppCenter.Crashes.dll" target="lib/netstandard1.0" />
+    <file src="$netstandard_dir$/Microsoft.AppCenter.Crashes.xml" target="lib/netstandard1.0" />
 
     <!-- Android -->
     <file src="$android_dir$/Microsoft.AppCenter.Crashes.dll" target="lib/MonoAndroid403" />
+    <file src="$android_dir$/Microsoft.AppCenter.Crashes.xml" target="lib/MonoAndroid403" />
     <file src="$android_dir$/Microsoft.AppCenter.Crashes.Android.Bindings.dll" target="lib/MonoAndroid403" />
 
     <!-- iOS -->
     <file src="$ios_dir$/Microsoft.AppCenter.Crashes.dll" target="lib/Xamarin.iOS10" />
+    <file src="$ios_dir$/Microsoft.AppCenter.Crashes.xml" target="lib/Xamarin.iOS10" />
     <file src="$ios_dir$/Microsoft.AppCenter.Crashes.iOS.Bindings.dll" target="lib/Xamarin.iOS10" />
 
-    <!-- WindowsDesktop (WPF and WinForms) -->
-    <!-- TODO: Uncomment when it's time to release these. -->
-    <!-- file src="$windows_desktop_dir$/Microsoft.AppCenter.Crashes.dll" target="lib/net45" /-->
-
     <!-- UWP -->
-    <!-- targets files add correct references to proper platforms -->
-    <file src="$uwp_dir$/Microsoft.AppCenter.Crashes.targets" target="build/uap10.0"/>
-    <file src="$uwp_dir$/Microsoft.AppCenter.Crashes.dll" target="ref/uap10.0" />
+    <file src="$uwp_dir$/Microsoft.AppCenter.Crashes.dll" target="lib/uap10.0" />
+    <file src="$uwp_dir$/Microsoft.AppCenter.Crashes.xml" target="lib/uap10.0" />
 
-    <!--x86 -->
-    <file src="$uwp_dir$/x86/Microsoft.AppCenter.Crashes.dll" target="runtimes/win10-x86/lib/uap10.0" />
-    <file src="$uwp_dir$/x86/WatsonRegistrationUtility.dll"  target="runtimes/win10-x86/native"/>
-    <file src="$uwp_dir$/x86/WatsonRegistrationUtility.winmd" target="runtimes/win10-x86/lib/uap10.0" />
+    <!-- WindowsDesktop (WPF and WinForms) for .NET framework -->
+    <file src="$windows_desktop_dir$/Microsoft.AppCenter.Crashes.dll" target="lib/net461" />
+    <file src="$windows_desktop_dir$/Microsoft.AppCenter.Crashes.xml" target="lib/net461" />
 
-    <!-- x64 -->
-    <file src="$uwp_dir$/x64/Microsoft.AppCenter.Crashes.dll" target="runtimes/win10-x64/lib/uap10.0" />
-    <file src="$uwp_dir$/x64/WatsonRegistrationUtility.dll"  target="runtimes/win10-x64/native"/>
-    <file src="$uwp_dir$/x64/WatsonRegistrationUtility.winmd" target="runtimes/win10-x64/lib/uap10.0" />
-
-    <!-- ARM -->
-    <file src="$uwp_dir$/ARM/Microsoft.AppCenter.Crashes.dll" target="runtimes/win10-arm/lib/uap10.0" />
-    <file src="$uwp_dir$/ARM/WatsonRegistrationUtility.dll"  target="runtimes/win10-arm/native"/>
-    <file src="$uwp_dir$/ARM/WatsonRegistrationUtility.winmd" target="runtimes/win10-arm/lib/uap10.0" />
-
+    <!-- WindowsDesktop (WPF and WinForms) for .NET Core -->
+    <file src="$windows_desktop_netcore_dir$/Microsoft.AppCenter.Crashes.dll" target="lib/netcoreapp3.0" />
+    <file src="$windows_desktop_netcore_dir$/Microsoft.AppCenter.Crashes.xml" target="lib/netcoreapp3.0" />
   </files>
 </package>

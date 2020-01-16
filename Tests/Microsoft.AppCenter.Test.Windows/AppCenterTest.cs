@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Threading.Tasks;
 using Microsoft.AppCenter.Channel;
 using Microsoft.AppCenter.Ingestion.Models;
@@ -95,6 +98,47 @@ namespace Microsoft.AppCenter.Test
         public void VerifySdkVersion()
         {
             Assert.AreEqual(WrapperSdk.Version, AppCenter.SdkVersion);
+        }
+
+        /// <summary>
+        /// Verify country code setter
+        /// </summary>
+        [TestMethod]
+        public void SetCountryCode()
+        {
+            // Mock event handler.
+            var mockInformationInvalidated = new Mock<EventHandler>();
+
+            // Initialize device information helper.
+            DeviceInformationHelper.InformationInvalidated += mockInformationInvalidated.Object;
+            var deviceInformationHelper = new DeviceInformationHelper();
+            var device = deviceInformationHelper.GetDeviceInformationAsync().RunNotAsync();
+            Assert.IsNull(device.CarrierCountry);
+
+            // Valid country code.
+            var validCountryCode = "US";
+            AppCenter.SetCountryCode(validCountryCode);
+            device = deviceInformationHelper.GetDeviceInformationAsync().RunNotAsync();
+            Assert.AreEqual(device.CarrierCountry, validCountryCode);
+            mockInformationInvalidated.Verify(_ => _(It.IsAny<object>(), It.IsAny<EventArgs>()), Times.Once);
+
+            // Invalid country code.
+            var invalidCountryCode = "US1";
+            AppCenter.SetCountryCode(invalidCountryCode);
+            device = deviceInformationHelper.GetDeviceInformationAsync().RunNotAsync();
+
+            // The code has not been updated and the event has not been called.
+            Assert.AreEqual(device.CarrierCountry, validCountryCode);
+            mockInformationInvalidated.Verify(_ => _(It.IsAny<object>(), It.IsAny<EventArgs>()), Times.Once);
+
+            // Reset country code.
+            AppCenter.SetCountryCode(null);
+            device = deviceInformationHelper.GetDeviceInformationAsync().RunNotAsync();
+            Assert.IsNull(device.CarrierCountry);
+            mockInformationInvalidated.Verify(_ => _(It.IsAny<object>(), It.IsAny<EventArgs>()), Times.Exactly(2));
+
+            // Clean.
+            DeviceInformationHelper.InformationInvalidated -= mockInformationInvalidated.Object;
         }
 
         /// <summary>
@@ -200,20 +244,37 @@ namespace Microsoft.AppCenter.Test
         /// Verify that install id comes from settings and is not null
         /// </summary>
         [TestMethod]
-        public void GetInstallId()
+        public void GetExistingInstallId()
         {
             AppCenter.Configure("appsecret");
 
             var fakeInstallId = Guid.NewGuid();
             _settingsMock.ResetCalls();
-            _settingsMock.Setup(settings => settings.GetValue(AppCenter.InstallIdKey, It.IsAny<Guid>())).Returns(fakeInstallId);
+            _settingsMock.Setup(settings => settings.GetValue(AppCenter.InstallIdKey, default(Guid?))).Returns(fakeInstallId);
 
             var installId = AppCenter.GetInstallIdAsync().Result;
 
             Assert.IsTrue(installId.HasValue);
             Assert.AreEqual(installId.Value, fakeInstallId);
-            _settingsMock.Verify(settings => settings.GetValue(AppCenter.InstallIdKey, It.IsAny<Guid>()),
+            _settingsMock.Verify(settings => settings.GetValue(AppCenter.InstallIdKey, default(Guid?)),
                 Times.Once());
+        }
+
+        /// <summary>
+        /// Verify that install id is generated and saved if not existing.
+        /// </summary>
+        [TestMethod]
+        public void GetNewInstallId()
+        {
+            AppCenter.Configure("appsecret");
+
+            _settingsMock.ResetCalls();
+
+            var installId = AppCenter.GetInstallIdAsync().Result;
+
+            Assert.IsTrue(installId.HasValue);
+            Assert.IsNotNull(installId.Value);
+            _settingsMock.Verify(settings => settings.SetValue(AppCenter.InstallIdKey, It.IsNotNull<Guid?>()), Times.Once());
         }
 
         /// <summary>
@@ -428,7 +489,7 @@ namespace Microsoft.AppCenter.Test
         public void ParseAppSecretNoEquals()
         {
             var appSecret = Guid.NewGuid().ToString();
-            var parsedSecret = AppCenter.GetSecretForPlatform(appSecret, "uwp");
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(appSecret, "uwp");
             Assert.AreEqual(appSecret, parsedSecret);
         }
 
@@ -441,7 +502,7 @@ namespace Microsoft.AppCenter.Test
             var appSecret = Guid.NewGuid().ToString();
             var platformId = "uwp";
             var secrets = $"{platformId}={appSecret}";
-            var parsedSecret = AppCenter.GetSecretForPlatform(secrets, platformId);
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
             Assert.AreEqual(appSecret, parsedSecret);
         }
 
@@ -454,8 +515,95 @@ namespace Microsoft.AppCenter.Test
             var appSecret = Guid.NewGuid().ToString();
             var platformId = "uwp";
             var secrets = $"{platformId}={appSecret};";
-            var parsedSecret = AppCenter.GetSecretForPlatform(secrets, platformId);
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
             Assert.AreEqual(appSecret, parsedSecret);
+        }
+
+        /// <summary>
+        /// Verify parse when there is only one platform and both app secret and token
+        /// </summary>
+        [TestMethod]
+        public void ParseAppSecretAndTargetOnePlatform()
+        {
+            var appSecret = Guid.NewGuid().ToString();
+            var targetToken = Guid.NewGuid().ToString();
+            var platformId = "ios";
+            var secrets = $"{platformId}={appSecret};{platformId}Target={targetToken}";
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
+            var expected = $"appsecret={appSecret};target={targetToken}";
+            Assert.AreEqual(expected, parsedSecret);
+        }
+
+        /// <summary>
+        /// Verify throw exception when finding none of the keys.
+        /// </summary>
+        [TestMethod]
+        [ExpectedException(typeof(AppCenterException))]
+        public void ThrowWhenFoundNoneOfTheKeys()
+        {
+            var invalidePlatformIdentifier = "invalidePlatformIdentifier";
+            var appSecret = Guid.NewGuid().ToString();
+            var targetToken = Guid.NewGuid().ToString();
+            var platformId = "ios";
+            var secrets = $"{platformId}={appSecret};{platformId}Target={targetToken}";
+            AppCenter.GetSecretAndTargetForPlatform(secrets, invalidePlatformIdentifier);
+        }
+
+        /// <summary>
+        /// Verify throw exception when both keys are empty.
+        /// </summary>
+        [TestMethod]
+        [ExpectedException(typeof(AppCenterException))]
+        public void ThrowWhenBothKeysAreEmpty()
+        {
+            var appSecret = string.Empty;
+            var targetToken = string.Empty;
+            var platformId = "ios";
+            var secrets = $"{platformId}={appSecret};{platformId}Target={targetToken}";
+            AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
+        }
+
+        /// <summary>
+        /// Verify parse when there are several platforms of both app secret and token.
+        /// </summary>
+        [TestMethod]
+        public void ParseAppSecretAndTargetMultiplePlatform()
+        {
+            var appSecret = Guid.NewGuid().ToString();
+            var anotherAppSecret = Guid.NewGuid().ToString();
+            var targetToken = Guid.NewGuid().ToString();
+            var platformId = "android";
+            var secrets = $"{platformId}={appSecret};ios={anotherAppSecret};{platformId}Target={targetToken};iosTarget={anotherAppSecret}";
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
+            var expected = $"appsecret={appSecret};target={targetToken}";
+            Assert.AreEqual(expected, parsedSecret);
+        }
+
+        /// <summary>
+        /// Verify parse when there is only token.
+        /// </summary>
+        [TestMethod]
+        public void ParseTargetToken()
+        {
+            var targetToken = Guid.NewGuid().ToString();
+            var platformId = "android";
+            var secrets = $"{platformId}Target={targetToken};";
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
+            var expected = $"target={targetToken}";
+            Assert.AreEqual(expected, parsedSecret);
+        }
+
+        /// <summary>
+        /// Verify that the invalid target string is not parsed.
+        /// </summary>
+        [TestMethod]
+        public void NotParseTargetString()
+        {
+            var targetToken = Guid.NewGuid().ToString();
+            var secrets = $"target={targetToken};";
+            var platformId = "ios";
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
+            Assert.AreEqual(secrets, parsedSecret);
         }
 
         /// <summary>
@@ -466,8 +614,8 @@ namespace Microsoft.AppCenter.Test
         {
             var appSecret = Guid.NewGuid().ToString();
             var platformId = "uwp";
-            var secrets = $"{platformId}={appSecret}; ios=anotherstring";
-            var parsedSecret = AppCenter.GetSecretForPlatform(secrets, platformId);
+            var secrets = $"{platformId}={appSecret};ios=anotherstring";
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
             Assert.AreEqual(appSecret, parsedSecret);
         }
 
@@ -479,8 +627,8 @@ namespace Microsoft.AppCenter.Test
         {
             var appSecret = Guid.NewGuid().ToString();
             var platformId = "uwp";
-            var secrets = $"ios=anotherstring; {platformId}={appSecret}";
-            var parsedSecret = AppCenter.GetSecretForPlatform(secrets, platformId);
+            var secrets = $"ios=anotherstring;{platformId}={appSecret}";
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
             Assert.AreEqual(appSecret, parsedSecret);
         }
 
@@ -493,7 +641,7 @@ namespace Microsoft.AppCenter.Test
             var appSecret = Guid.NewGuid().ToString();
             var platformId = "uwp";
             var secrets = $"ios=anotherstring;;;;{platformId}={appSecret};;;;";
-            var parsedSecret = AppCenter.GetSecretForPlatform(secrets, platformId);
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
             Assert.AreEqual(appSecret, parsedSecret);
         }
 
@@ -510,6 +658,32 @@ namespace Microsoft.AppCenter.Test
         }
 
         /// <summary>
+        /// Verify empty pairs are ignored.
+        /// </summary>
+        [TestMethod]
+        public void ParseValidSecretSurroundedWithInvalidPairs()
+        {
+            var appSecret = Guid.NewGuid().ToString();
+            var platformId = "uwp";
+            var secrets = $"=;{platformId}={appSecret};=";
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
+            Assert.AreEqual(appSecret, parsedSecret);
+        }
+
+        /// <summary>
+        /// Verify last value is used on duplicate key.
+        /// </summary>
+        [TestMethod]
+        public void ParseSecretUsesLastValueOnDuplicateKey()
+        {
+            var appSecret = Guid.NewGuid().ToString();
+            var platformId = "uwp";
+            var secrets = $"{platformId}={Guid.NewGuid()};{platformId}={appSecret}";
+            var parsedSecret = AppCenter.GetSecretAndTargetForPlatform(secrets, platformId);
+            Assert.AreEqual(appSecret, parsedSecret);
+        }
+
+        /// <summary>
         /// Verify parse when the platform identifier is wrong
         /// </summary>
         [TestMethod]
@@ -519,7 +693,7 @@ namespace Microsoft.AppCenter.Test
             var platformId = "uwp";
             var secrets = $"ios=anotherstring;{platformId}={appSecret};";
             Assert.ThrowsException<AppCenterException>(
-                () => AppCenter.GetSecretForPlatform(secrets, platformId + platformId));
+                () => AppCenter.GetSecretAndTargetForPlatform(secrets, platformId + platformId));
         }
 
         /// <summary>
@@ -591,6 +765,27 @@ namespace Microsoft.AppCenter.Test
             _channelMock.Verify(channel => channel.EnqueueAsync(It.Is<StartServiceLog>(log =>
                 log.Services.Count == 1 &&
                 log.Services[0] == MockAppCenterService.Instance.ServiceName)), Times.Once());
+        }
+
+        [TestMethod]
+        public void SetWrapperSdk()
+        {
+            string wrapperName = $"expectedName {Guid.NewGuid()}";
+            string wrapperVersion = $"expectedVersion {Guid.NewGuid()}";
+            string releaseLabel = $"expectedLabel {Guid.NewGuid()}";
+            string updateDevKey = $"expectedUpdateDevKey {Guid.NewGuid()}";
+            string updatePackageHash = $"expectedHash {Guid.NewGuid()}";
+            string runtimeVersion = $"expectedRuntimeVersion {Guid.NewGuid()}";
+            WrapperSdk wrapperSdk = new WrapperSdk(wrapperName, wrapperVersion, runtimeVersion, releaseLabel, updateDevKey, updatePackageHash);
+            DeviceInformationHelper.SetWrapperSdk(wrapperSdk);
+            var deviceInformationHelper = new DeviceInformationHelper();
+            var device = deviceInformationHelper.GetDeviceInformationAsync().RunNotAsync();
+            Assert.AreEqual(wrapperName, device.WrapperSdkName);
+            Assert.AreEqual(wrapperVersion, device.WrapperSdkVersion);
+            Assert.AreEqual(releaseLabel, device.LiveUpdateReleaseLabel);
+            Assert.AreEqual(updateDevKey, device.LiveUpdateDeploymentKey);
+            Assert.AreEqual(updatePackageHash, device.LiveUpdatePackageHash);
+            Assert.AreEqual(runtimeVersion, device.WrapperRuntimeVersion);
         }
     }
 

@@ -1,14 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ContentPage Title="App Center" xmlns:local="clr-namespace:Contoso.Forms.Demo"
-             xmlns="http://xamarin.com/schemas/2014/forms"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Contoso.Forms.Demo.AppCenterContentPage">
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage Title="App Center" xmlns:local="clr-namespace:Contoso.Forms.Demo" xmlns="http://xamarin.com/schemas/2014/forms" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" x:Class="Contoso.Forms.Demo.AppCenterContentPage">
     <TableView Intent="Form">
         <TableSection Title="AppCenter Settings">
-            <SwitchCell Text="AppCenter Enabled" On="true" x:Name="AppCenterEnabledSwitchCell" OnChanged="UpdateEnabled"/>
+            <SwitchCell Text="AppCenter Enabled" On="true" x:Name="AppCenterEnabledSwitchCell" OnChanged="UpdateEnabled" OnColor="{StaticResource SwitchCellOnColor}" />
         </TableSection>
-        <TableSection Title="Logging">
-            <EntryCell Label="User Id" x:Name="UserIdEntryCell" HorizontalTextAlignment="End" Completed="UserIdCompleted"/>
+        <TableSection Title="Startup type">
+            <ViewCell>
+                <Picker x:Name="StartTypePicker" Title="Start Type" PropertyChanged="ChangeStartType" />
+            </ViewCell>
+        </TableSection>
+        <TableSection Title="Misc">
+            <ViewCell>
+                <StackLayout Orientation="Horizontal" Margin="15,0,15,0">
+                    <Label Text="User Id" HorizontalOptions="FillAndExpand" VerticalOptions="Center" />
+                    <Entry x:Name="UserIdEntry" HorizontalOptions="FillAndExpand" VerticalOptions="Center" HorizontalTextAlignment="End" />
+                </StackLayout>
+            </ViewCell>
         </TableSection>
     </TableView>
 </ContentPage>

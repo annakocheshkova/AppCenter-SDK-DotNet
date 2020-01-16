@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using Microsoft.AppCenter;
 using Xamarin.Forms;
 
@@ -63,7 +66,7 @@ namespace Contoso.Forms.Demo
         {
             PropertyValueHolder.Children.Clear();
             PropertyValue.IsVisible = false;
-            switch ((PropertyTypes)PropertyType.SelectedIndex)
+            switch ((PropertyTypes) PropertyType.SelectedIndex)
             {
                 case PropertyTypes.Boolean:
                     PropertyValueHolder.Children.Add(new Switch());

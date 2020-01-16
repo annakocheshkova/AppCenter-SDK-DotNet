@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -19,7 +22,7 @@ namespace Microsoft.AppCenter.Test.Windows.Ingestion.Http
         protected IList<Log> Logs => new List<Log>();
 
         /// <summary>
-        /// Helper for setup responce.
+        /// Helper for setup response.
         /// </summary>
         protected ISetup<IHttpNetworkAdapter, Task<string>> SetupAdapterSendResponse(params HttpStatusCode[] statusCodes)
         {
@@ -34,7 +37,7 @@ namespace Microsoft.AppCenter.Test.Windows.Ingestion.Http
             setup.Returns(() =>
             {
                 var statusCode = statusCodes[index < statusCodes.Length ? index++ : statusCodes.Length - 1];
-                return statusCode == HttpStatusCode.OK
+                return ((int)statusCode >= 200 && (int)statusCode < 300)
                     ? TaskExtension.GetCompletedTask("")
                     : TaskExtension.GetFaultedTask<string>(new HttpIngestionException("")
                     {

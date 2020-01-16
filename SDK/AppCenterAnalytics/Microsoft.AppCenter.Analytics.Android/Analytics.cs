@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -73,5 +76,10 @@ namespace Microsoft.AppCenter.Analytics
         //{
         //    AndroidAnalytics.TrackPage(name, properties);
         //}
+
+        internal static void UnsetInstance()
+        {
+            AndroidAnalytics.UnsetInstance();
+        }
     }
 }
