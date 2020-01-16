@@ -166,32 +166,42 @@ Task("StartNewVersion").Does(()=>
 
 // Fills sdk, android and ios versions in the build config file with the relevant ones.
 // sdkVersion must be provided as a parameter.
-Task("UpdateToLatestVersions").Does(() => 
+Task("UpdateToLatestVersions")
+.IsDependentOn("UpdateAndroidToLatestVersion")
+.IsDependentOn("UpdateIosToLatestVersion");
+
+Task("UpdateAndroidToLatestVersion")
+.Does(() => 
 {
-    Information($"Filling build config with new versions...");
-    var sdkVersion = Argument<string>("sdkVersion", "");
-    if (sdkVersion.Length > 0) 
-    {
-        Information($"Verifying if {sdkVersion} is a valid semver version...");
-        ParseSemVer(sdkVersion);
-        UpdateConfigFileSdkVersion(sdkVersion);
-    }
     var androidLatestVersion = GetLatestGitHubReleaseVersion(AndroidSdkRepoName);
-    var appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
     Information($"Received latest android sdk release version {androidLatestVersion}. Verifying if it's a valid semver version...");
     ParseSemVer(androidLatestVersion);
-    Information($"Received latest apple sdk release version {appleLatestVersion}. Verifying if it's a valid semver version...");
-    ParseSemVer(appleLatestVersion);
-    var versionsAreEqual = VersionReader.IosVersion.Equals(appleLatestVersion) && VersionReader.AndroidVersion.Equals(androidLatestVersion);
+    var versionsAreEqual = VersionReader.AndroidVersion.Equals(androidLatestVersion);
     if (versionsAreEqual) 
     {
         Information($"Nothing to replace. Exiting...");
         return;
     }
-    Information($"Replacing build config versions: androidVersion is {VersionReader.AndroidVersion} and iosVersion is {VersionReader.IosVersion}.");
+    Information($"Replacing build config version: androidVersion is {VersionReader.AndroidVersion}.");
     ReplaceTextInFiles(ConfigFile.Path, VersionReader.AndroidVersion, androidLatestVersion);
+    Information($"Successfully replaced androidVersion with {androidLatestVersion} in ac-build-config.xml.");
+}).OnError(HandleError);
+
+Task("UpdateIosToLatestVersion")
+.Does(() => 
+{
+    var appleLatestVersion = GetLatestGitHubReleaseVersion(AppleSdkRepoName);
+    Information($"Received latest apple sdk release version {appleLatestVersion}. Verifying if it's a valid semver version...");
+    ParseSemVer(appleLatestVersion);
+    var versionsAreEqual = VersionReader.IosVersion.Equals(appleLatestVersion);
+    if (versionsAreEqual) 
+    {
+        Information($"Nothing to replace. Exiting...");
+        return;
+    }
+    Information($"Replacing build config versions: iosVersion is {VersionReader.IosVersion}.");
     ReplaceTextInFiles(ConfigFile.Path, VersionReader.IosVersion, appleLatestVersion);
-    Information($"Successfully replaced iosVersion with {appleLatestVersion} and androidVersion with {androidLatestVersion} in ac-build-config.xml.");
+    Information($"Successfully replaced iosVersion with {appleLatestVersion} in ac-build-config.xml.");
 }).OnError(HandleError);
 
 Task("IncreasePatchVersion").Does(() => 
