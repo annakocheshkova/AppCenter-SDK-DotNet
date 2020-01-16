@@ -7,6 +7,7 @@
 #addin nuget:?package=Cake.SemVer&version=2.0.0
 #addin nuget:?package=semver&version=2.0.4
 #load "scripts/utility.cake"
+#load "scripts/test-tools.cake"
 #load "scripts/configuration/config-parser.cake"
 
 using System.Net;

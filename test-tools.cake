@@ -18,6 +18,7 @@ string ArchiveDirectory = "archives";
 bool IsMandatory = false;
 string DistributionGroup = "Private Release Script Group";
 string Token = EnvironmentVariable("APP_CENTER_API_TOKEN");
+string GithubToken = EnvironmentVariable("GithubToken");
 string BaseUrl = "https://api.appcenter.ms";
 ApplicationInfo CurrentApp = null;
 
@@ -109,6 +110,7 @@ Setup(context =>
     {
         environment = Environment.Int;
         Token = EnvironmentVariable("APP_CENTER_INT_API_TOKEN");
+        GithubToken = EnvironmentVariable("GithubToken");
         BaseUrl = "https://appcenter-int.trafficmanager.net/api";
     }
     var platformString = Argument<string>("Platform", "ios");
@@ -274,6 +276,27 @@ Task("ReleaseApplication")
                     DistributionGroup + mandatorySuffix + ".");
 });
 
+Task("CreateReleasePullRequest").Does(() => 
+{
+    var newSdkVersion = Argument<string>("newVersion");
+    var title = $"Start new {newSdkVersion} release";
+    var body = title;
+    var head = $"release/{newSdkVersion}";
+    var _base = "master";
+    
+    // Release the upload
+    Information("Creating a release Pull Reuqest...");
+    var pullRequest = GetGitHubWebRequest("repos/microsoft/appcenter-sdk-dotnet/pulls", GithubToken, "POST");
+    AttachJsonPayload(pullRequest, 
+                        new JObject(
+                            new JProperty("title", title),
+                            new JProperty("body", body),
+                            new JProperty("head", head),
+                            new JProperty("base", _base)));
+    pullRequest.GetResponse().Dispose();
+    Information("Successfully created a release pull reuqest.");
+});
+
 // Push tasks
 Task("SendPushNotification")
 .Does(()=>
@@ -326,6 +349,31 @@ HttpWebRequest GetWebRequest(string url, string token, string method = "POST")
     request.Accept = "application/json";
     request.Method = method;
     return request;
+}
+
+// Creates a valid GitHub request and fills the headers needed to make a request to GH.
+// path is a part of the url without the base part, doesn't need to start with "/".
+HttpWebRequest GetGitHubWebRequest(string path, string token = "", string method = "GET") 
+{
+    var url = $"https://api.github.com/{path}";
+    var request = (HttpWebRequest)WebRequest.Create (url);
+    if (token.Length > 0) 
+    {
+        request.Headers["Authorization"] = $"token {token}";
+    }
+    request.Accept = "application/vnd.github.v3+json";
+    request.UserAgent = "Microsoft";
+    request.Method = method;
+    return request;
+}
+
+// Gets the latest repository release version. 
+// repoName is a repository name, including owner: <owner>/<name>.
+string GetLatestGitHubReleaseVersion(string repoName) 
+{
+    var request = GetGitHubWebRequest($"repos/{repoName}/releases/latest");
+    var release = GetResponseJson(request);
+    return release["tag_name"].ToString();
 }
 
 void AttachJsonPayload(HttpWebRequest request, JObject json)
