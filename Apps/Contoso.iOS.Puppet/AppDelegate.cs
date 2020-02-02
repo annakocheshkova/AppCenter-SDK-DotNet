@@ -57,7 +57,7 @@ namespace Contoso.iOS.Puppet
             Distribute.SetApiUrl("https://api-gateway-core-integration.dev.avalanch.es/v0.1");
             Distribute.DontCheckForUpdatesInDebug();
             Data.SetTokenExchangeUrl("https://token-exchange-mbaas-integration.dev.avalanch.es/v0.1");
-            AppCenter.Start("e94aaff4-e80d-4fee-9a5f-a84eb6e688fc", typeof(Analytics), typeof(Crashes), typeof(Distribute), typeof(Push));
+            AppCenter.Start("9a706b7c-100e-4263-a4fc-5efb2adc8aeb", typeof(Analytics), typeof(Crashes), typeof(Distribute), typeof(Push));
             return true;
         }
 
